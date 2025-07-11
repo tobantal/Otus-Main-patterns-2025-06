@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "Circle.h"
-#include <corecrt_math_defines.h>
+#include "MathSettings.h"
 
 TEST(CircleTest, AreaAndPerimeter) {
     Circle c(2.0);

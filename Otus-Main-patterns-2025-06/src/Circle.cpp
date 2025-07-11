@@ -1,5 +1,5 @@
 #include "Circle.h"
-#include <corecrt_math_defines.h>
+#include "MathSettings.h"
 
 Circle::Circle(double r) : radius(r) {}
 

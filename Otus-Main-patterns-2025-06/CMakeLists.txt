@@ -11,7 +11,7 @@ add_executable(ShapeDemo
     src/main.cpp
     src/Rectangle.cpp
     src/Circle.cpp
-)
+ "include/MathSettings.h")
 
 # TODO: Добавьте тесты и целевые объекты, если это необходимо.
 
