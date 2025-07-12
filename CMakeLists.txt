@@ -13,5 +13,18 @@ endif()
 
 project ("Otus-Main-patterns-2025-06")
 
+# TODO: Добавьте тесты и целевые объекты, если это необходимо.
+
+# GoogleTest setup
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/heads/main.zip
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+
 # Включите подпроекты.
 add_subdirectory ("Otus-Main-patterns-2025-06")
