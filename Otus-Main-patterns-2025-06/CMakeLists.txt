@@ -1,7 +1,4 @@
-﻿# CMakeList.txt: проект CMake для Otus-Main-patterns-2025-06; включите исходный код и определения,
-# укажите здесь логику для конкретного проекта.
-#
-project(ShapeDemo)
+﻿project(ShapeDemo)
 
 # Подключаем include
 include_directories(include)

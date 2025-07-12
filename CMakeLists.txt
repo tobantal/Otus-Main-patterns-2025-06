@@ -1,7 +1,4 @@
-﻿# CMakeList.txt: файл проекта CMake верхнего уровня; проведите глобальную конфигурацию
-# и включите сюда подпроекты.
-#
-cmake_minimum_required (VERSION 3.14)
+﻿cmake_minimum_required (VERSION 3.14)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -12,8 +9,6 @@ if (POLICY CMP0141)
 endif()
 
 project ("Otus-Main-patterns-2025-06")
-
-# TODO: Добавьте тесты и целевые объекты, если это необходимо.
 
 # GoogleTest setup
 include(FetchContent)
