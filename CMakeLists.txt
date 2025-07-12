@@ -22,4 +22,4 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 # Включите подпроекты.
-add_subdirectory ("Otus-Main-patterns-2025-06")
+add_subdirectory ("hw-01-square-equation-solver")
