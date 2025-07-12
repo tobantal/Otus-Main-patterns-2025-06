@@ -1,14 +1,14 @@
-﻿project(ShapeDemo)
+﻿project(SquareEquationSolver)
 
 # Подключаем include
 include_directories(include)
 
 # Основное приложение
-add_executable(ShapeDemo
+add_executable(SquareEquationSolver
     src/main.cpp
-    src/Rectangle.cpp
-    src/Circle.cpp
- "include/MathSettings.h")
+    
+    
+ "include/MathSettings.h" "include/SquareEquationSolver.h" "src/SquareEquationSolver.cpp")
 
 # Добавляем тесты
 add_subdirectory(tests)
