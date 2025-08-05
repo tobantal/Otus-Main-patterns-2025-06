@@ -1,6 +1,7 @@
 ﻿#include "MovableAdapter.hpp"
 #include <cmath>
-#include <corecrt_math_defines.h>
+
+const double M_PI = std::acos(-1.0); // Математически точное определение числа "пи"
 
 MovableAdapter::MovableAdapter(std::shared_ptr<IGameObject> gameObject)
     : m_gameObject(gameObject) {
