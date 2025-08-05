@@ -1,44 +1,27 @@
-name: CI
+﻿name: CMake CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   build-and-test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        build_type: [Debug, Release]
+    runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: 🔄 Checkout repository
+      uses: actions/checkout@v3
 
-    - name: Install dependencies (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake build-essential libgtest-dev
-        cd /usr/src/gtest
-        sudo cmake CMakeLists.txt
-        sudo make
-        sudo cp lib/*.a /usr/lib
+    - name: 🛠 Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y cmake g++ make
 
-    - name: Install dependencies (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        choco install cmake
-        vcpkg install gtest:x64-windows
+    - name: 🏗 Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
-    - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+    - name: ⚙️ Build
+      run: cmake --build build --config Release
 
-    - name: Build
-      run: cmake --build build --config ${{ matrix.build_type }}
-
-    - name: Test
-      working-directory: build
-      run: ctest -C ${{ matrix.build_type }} --output-on-failure
+    - name: ✅ Run tests
+      run: ctest --test-dir build --output-on-failure
