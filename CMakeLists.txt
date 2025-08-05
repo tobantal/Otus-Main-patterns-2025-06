@@ -22,4 +22,5 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 # Включите подпроекты.
-add_subdirectory ("hw-01-square-equation-solver")
+#add_subdirectory ("hw-01-square-equation-solver")
+add_subdirectory ("hw-02-abstractions")
