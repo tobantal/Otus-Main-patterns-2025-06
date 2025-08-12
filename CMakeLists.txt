@@ -23,4 +23,5 @@ enable_testing()
 
 # Включите подпроекты.
 #add_subdirectory ("hw-01-square-equation-solver")
-add_subdirectory ("hw-02-abstractions")
+#add_subdirectory ("hw-02-abstractions")
+add_subdirectory ("hw-03-solid-and-exceptions")
