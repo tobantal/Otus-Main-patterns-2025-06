@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
+п»ї#include <gtest/gtest.h>
 #include "RotateWithVelocityChangeCommand.hpp"
 #include "MovableAdapter.hpp"
 #include "SpaceShip.hpp"
 
 /**
- * @brief Тестовый набор для RotateWithVelocityChangeCommand
+ * @brief РўРµСЃС‚РѕРІС‹Р№ РЅР°Р±РѕСЂ РґР»СЏ RotateWithVelocityChangeCommand
  */
 class RotateWithVelocityChangeCommandTest : public ::testing::Test {
 protected:
@@ -22,53 +22,53 @@ protected:
 };
 
 /**
- * @test Поворот движущегося объекта без топлива
+ * @test РџРѕРІРѕСЂРѕС‚ РґРІРёР¶СѓС‰РµРіРѕСЃСЏ РѕР±СЉРµРєС‚Р° Р±РµР· С‚РѕРїР»РёРІР°
  */
 TEST_F(RotateWithVelocityChangeCommandTest, RotateMovingObjectWithoutFuel) {
     auto command = RotateWithVelocityChangeCommand::create(spaceShip, false);
     command->execute();
 
-    // Проверяем изменение направления
+    // РџСЂРѕРІРµСЂСЏРµРј РёР·РјРµРЅРµРЅРёРµ РЅР°РїСЂР°РІР»РµРЅРёСЏ
     int newDirection = std::any_cast<int>(spaceShip->getProperty("Direction"));
     ASSERT_EQ(45, newDirection);
 
-    // Топливо не должно измениться
+    // РўРѕРїР»РёРІРѕ РЅРµ РґРѕР»Р¶РЅРѕ РёР·РјРµРЅРёС‚СЊСЃСЏ
     int fuelLevel = std::any_cast<int>(spaceShip->getProperty("FuelLevel"));
     ASSERT_EQ(100, fuelLevel);
 }
 
 /**
- * @test Поворот движущегося объекта с топливом
+ * @test РџРѕРІРѕСЂРѕС‚ РґРІРёР¶СѓС‰РµРіРѕСЃСЏ РѕР±СЉРµРєС‚Р° СЃ С‚РѕРїР»РёРІРѕРј
  */
 TEST_F(RotateWithVelocityChangeCommandTest, RotateMovingObjectWithFuel) {
     auto command = RotateWithVelocityChangeCommand::create(spaceShip, true);
     command->execute();
 
-    // Проверяем изменение направления
+    // РџСЂРѕРІРµСЂСЏРµРј РёР·РјРµРЅРµРЅРёРµ РЅР°РїСЂР°РІР»РµРЅРёСЏ
     int newDirection = std::any_cast<int>(spaceShip->getProperty("Direction"));
     ASSERT_EQ(45, newDirection);
 
-    // Проверяем расход топлива
+    // РџСЂРѕРІРµСЂСЏРµРј СЂР°СЃС…РѕРґ С‚РѕРїР»РёРІР°
     int fuelLevel = std::any_cast<int>(spaceShip->getProperty("FuelLevel"));
     ASSERT_EQ(95, fuelLevel);
 }
 
 /**
- * @test Поворот неподвижного объекта
+ * @test РџРѕРІРѕСЂРѕС‚ РЅРµРїРѕРґРІРёР¶РЅРѕРіРѕ РѕР±СЉРµРєС‚Р°
  */
 TEST_F(RotateWithVelocityChangeCommandTest, RotateStationaryObject) {
-    spaceShip->setProperty("Velocity", 0); // Объект не движется
+    spaceShip->setProperty("Velocity", 0); // РћР±СЉРµРєС‚ РЅРµ РґРІРёР¶РµС‚СЃСЏ
 
     auto command = RotateWithVelocityChangeCommand::create(spaceShip, false);
     command->execute();
 
-    // Проверяем изменение направления
+    // РџСЂРѕРІРµСЂСЏРµРј РёР·РјРµРЅРµРЅРёРµ РЅР°РїСЂР°РІР»РµРЅРёСЏ
     int newDirection = std::any_cast<int>(spaceShip->getProperty("Direction"));
     ASSERT_EQ(45, newDirection);
 }
 
 /**
- * @test Исключение при недостаточном топливе
+ * @test РСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РЅРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕРј С‚РѕРїР»РёРІРµ
  */
 TEST_F(RotateWithVelocityChangeCommandTest, ThrowsWhenInsufficientFuel) {
     spaceShip->setProperty("FuelLevel", 2);
@@ -76,7 +76,7 @@ TEST_F(RotateWithVelocityChangeCommandTest, ThrowsWhenInsufficientFuel) {
     auto command = RotateWithVelocityChangeCommand::create(spaceShip, true);
     ASSERT_THROW(command->execute(), CommandException);
 
-    // Проверяем, что направление не изменилось
+    // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РЅР°РїСЂР°РІР»РµРЅРёРµ РЅРµ РёР·РјРµРЅРёР»РѕСЃСЊ
     int direction = std::any_cast<int>(spaceShip->getProperty("Direction"));
     ASSERT_EQ(0, direction);
 }

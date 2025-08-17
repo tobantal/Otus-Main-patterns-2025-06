@@ -1,4 +1,4 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -9,28 +9,28 @@
 #include "CommandException.hpp"
 
 /**
- * @brief Пример использования макрокоманд в игре "Космическая битва"
+ * @brief РџСЂРёРјРµСЂ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ РјР°РєСЂРѕРєРѕРјР°РЅРґ РІ РёРіСЂРµ "РљРѕСЃРјРёС‡РµСЃРєР°СЏ Р±РёС‚РІР°"
  *
- * Демонстрирует:
- * - Движение с расходом топлива
- * - Поворот с изменением вектора скорости
- * - Композицию команд через макрокоманды
- * - Обработку исключений при недостатке топлива
+ * Р”РµРјРѕРЅСЃС‚СЂРёСЂСѓРµС‚:
+ * - Р”РІРёР¶РµРЅРёРµ СЃ СЂР°СЃС…РѕРґРѕРј С‚РѕРїР»РёРІР°
+ * - РџРѕРІРѕСЂРѕС‚ СЃ РёР·РјРµРЅРµРЅРёРµРј РІРµРєС‚РѕСЂР° СЃРєРѕСЂРѕСЃС‚Рё
+ * - РљРѕРјРїРѕР·РёС†РёСЋ РєРѕРјР°РЅРґ С‡РµСЂРµР· РјР°РєСЂРѕРєРѕРјР°РЅРґС‹
+ * - РћР±СЂР°Р±РѕС‚РєСѓ РёСЃРєР»СЋС‡РµРЅРёР№ РїСЂРё РЅРµРґРѕСЃС‚Р°С‚РєРµ С‚РѕРїР»РёРІР°
  */
 int main() {
     std::cout << "=== Space Battle: Macro Commands Demo ===" << std::endl << std::endl;
 
-    // Создаем космический корабль
+    // РЎРѕР·РґР°РµРј РєРѕСЃРјРёС‡РµСЃРєРёР№ РєРѕСЂР°Р±Р»СЊ
     auto spaceShip = std::make_shared<SpaceShip>();
 
-    // Инициализируем свойства корабля
+    // РРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј СЃРІРѕР№СЃС‚РІР° РєРѕСЂР°Р±Р»СЏ
     spaceShip->setProperty("Position", Vector2D(100, 50));
-    spaceShip->setProperty("Velocity", 20);           // Скорость движения
-    spaceShip->setProperty("DirectionsNumber", 360);  // Система из 360 направлений
-    spaceShip->setProperty("Direction", 0);           // Направление: восток (0°)
-    spaceShip->setProperty("AngularVelocity", 45);    // Поворот на 45° за такт
-    spaceShip->setProperty("FuelLevel", 100);         // Уровень топлива
-    spaceShip->setProperty("FuelConsumption", 10);    // Расход топлива за операцию
+    spaceShip->setProperty("Velocity", 20);           // РЎРєРѕСЂРѕСЃС‚СЊ РґРІРёР¶РµРЅРёСЏ
+    spaceShip->setProperty("DirectionsNumber", 360);  // РЎРёСЃС‚РµРјР° РёР· 360 РЅР°РїСЂР°РІР»РµРЅРёР№
+    spaceShip->setProperty("Direction", 0);           // РќР°РїСЂР°РІР»РµРЅРёРµ: РІРѕСЃС‚РѕРє (0В°)
+    spaceShip->setProperty("AngularVelocity", 45);    // РџРѕРІРѕСЂРѕС‚ РЅР° 45В° Р·Р° С‚Р°РєС‚
+    spaceShip->setProperty("FuelLevel", 100);         // РЈСЂРѕРІРµРЅСЊ С‚РѕРїР»РёРІР°
+    spaceShip->setProperty("FuelConsumption", 10);    // Р Р°СЃС…РѕРґ С‚РѕРїР»РёРІР° Р·Р° РѕРїРµСЂР°С†РёСЋ
 
     std::cout << "Initial state:" << std::endl;
     std::cout << "Position: ("
@@ -41,7 +41,7 @@ int main() {
     std::cout << "Fuel: " << std::any_cast<int>(spaceShip->getProperty("FuelLevel")) << std::endl;
     std::cout << std::endl;
 
-    // Пример 1: Движение с расходом топлива
+    // РџСЂРёРјРµСЂ 1: Р”РІРёР¶РµРЅРёРµ СЃ СЂР°СЃС…РѕРґРѕРј С‚РѕРїР»РёРІР°
     std::cout << "=== Example 1: Move with fuel consumption ===" << std::endl;
     try {
         auto moveCommand = MoveWithFuelCommand::create(spaceShip);
@@ -62,7 +62,7 @@ int main() {
     }
     std::cout << std::endl;
 
-    // Пример 2: Поворот с изменением вектора скорости (с топливом)
+    // РџСЂРёРјРµСЂ 2: РџРѕРІРѕСЂРѕС‚ СЃ РёР·РјРµРЅРµРЅРёРµРј РІРµРєС‚РѕСЂР° СЃРєРѕСЂРѕСЃС‚Рё (СЃ С‚РѕРїР»РёРІРѕРј)
     std::cout << "=== Example 2: Rotate with velocity change and fuel ===" << std::endl;
     try {
         auto rotateCommand = RotateWithVelocityChangeCommand::create(spaceShip, true);
@@ -80,25 +80,25 @@ int main() {
     }
     std::cout << std::endl;
 
-    // Пример 3: Сложная последовательность действий
+    // РџСЂРёРјРµСЂ 3: РЎР»РѕР¶РЅР°СЏ РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕСЃС‚СЊ РґРµР№СЃС‚РІРёР№
     std::cout << "=== Example 3: Complex maneuver sequence ===" << std::endl;
     try {
-        // Создаем последовательность маневров
+        // РЎРѕР·РґР°РµРј РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕСЃС‚СЊ РјР°РЅРµРІСЂРѕРІ
         std::vector<std::shared_ptr<ICommand>> maneuvers;
 
-        // Поворот на 45°
+        // РџРѕРІРѕСЂРѕС‚ РЅР° 45В°
         maneuvers.push_back(RotateWithVelocityChangeCommand::create(spaceShip, true));
 
-        // Движение вперед
+        // Р”РІРёР¶РµРЅРёРµ РІРїРµСЂРµРґ
         maneuvers.push_back(MoveWithFuelCommand::create(spaceShip));
 
-        // Еще один поворот
+        // Р•С‰Рµ РѕРґРёРЅ РїРѕРІРѕСЂРѕС‚
         maneuvers.push_back(RotateWithVelocityChangeCommand::create(spaceShip, true));
 
-        // И еще движение
+        // Р РµС‰Рµ РґРІРёР¶РµРЅРёРµ
         maneuvers.push_back(MoveWithFuelCommand::create(spaceShip));
 
-        // Создаем макрокоманду для выполнения всей последовательности
+        // РЎРѕР·РґР°РµРј РјР°РєСЂРѕРєРѕРјР°РЅРґСѓ РґР»СЏ РІС‹РїРѕР»РЅРµРЅРёСЏ РІСЃРµР№ РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕСЃС‚Рё
         MacroCommand complexManeuver(maneuvers);
         complexManeuver.execute();
 
@@ -118,10 +118,10 @@ int main() {
     }
     std::cout << std::endl;
 
-    // Пример 4: Попытка движения при недостатке топлива
+    // РџСЂРёРјРµСЂ 4: РџРѕРїС‹С‚РєР° РґРІРёР¶РµРЅРёСЏ РїСЂРё РЅРµРґРѕСЃС‚Р°С‚РєРµ С‚РѕРїР»РёРІР°
     std::cout << "=== Example 4: Insufficient fuel scenario ===" << std::endl;
 
-    // Устанавливаем низкий уровень топлива
+    // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј РЅРёР·РєРёР№ СѓСЂРѕРІРµРЅСЊ С‚РѕРїР»РёРІР°
     spaceShip->setProperty("FuelLevel", 5);
     std::cout << "Setting fuel to 5 (consumption is 10)" << std::endl;
 
@@ -143,15 +143,15 @@ int main() {
     }
     std::cout << std::endl;
 
-    // Пример 5: Поворот неподвижного объекта
+    // РџСЂРёРјРµСЂ 5: РџРѕРІРѕСЂРѕС‚ РЅРµРїРѕРґРІРёР¶РЅРѕРіРѕ РѕР±СЉРµРєС‚Р°
     std::cout << "=== Example 5: Rotating stationary object ===" << std::endl;
 
-    // Создаем неподвижный объект
+    // РЎРѕР·РґР°РµРј РЅРµРїРѕРґРІРёР¶РЅС‹Р№ РѕР±СЉРµРєС‚
     auto stationaryObject = std::make_shared<SpaceShip>();
     stationaryObject->setProperty("DirectionsNumber", 360);
     stationaryObject->setProperty("Direction", 0);
     stationaryObject->setProperty("AngularVelocity", 90);
-    stationaryObject->setProperty("Velocity", 0);  // Не движется
+    stationaryObject->setProperty("Velocity", 0);  // РќРµ РґРІРёР¶РµС‚СЃСЏ
 
     try {
         auto rotateCommand = RotateWithVelocityChangeCommand::create(stationaryObject, false);

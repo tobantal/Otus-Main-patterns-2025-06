@@ -1,4 +1,4 @@
-#include "MacroCommand.hpp"
+п»ї#include "MacroCommand.hpp"
 
 MacroCommand::MacroCommand(const std::vector<std::shared_ptr<ICommand>>& commands)
     : m_commands(commands) {
@@ -15,17 +15,17 @@ MacroCommand::MacroCommand(const std::vector<std::shared_ptr<ICommand>>& command
 
 void MacroCommand::execute() {
     try {
-        // Выполняем команды последовательно
+        // Р’С‹РїРѕР»РЅСЏРµРј РєРѕРјР°РЅРґС‹ РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕ
         for (const auto& command : m_commands) {
             command->execute();
         }
     }
     catch (const CommandException& e) {
-        // Пробрасываем CommandException как есть
+        // РџСЂРѕР±СЂР°СЃС‹РІР°РµРј CommandException РєР°Рє РµСЃС‚СЊ
         throw CommandException("MacroCommand failed: " + std::string(e.what()));
     }
     catch (const std::exception& e) {
-        // Преобразуем другие исключения в runtime_error
+        // РџСЂРµРѕР±СЂР°Р·СѓРµРј РґСЂСѓРіРёРµ РёСЃРєР»СЋС‡РµРЅРёСЏ РІ runtime_error
         throw std::runtime_error("Failed to execute macro command: " + std::string(e.what()));
     }
 }

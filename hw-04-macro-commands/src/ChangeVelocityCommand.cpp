@@ -1,4 +1,4 @@
-#include "ChangeVelocityCommand.hpp"
+п»ї#include "ChangeVelocityCommand.hpp"
 #include <string>
 
 ChangeVelocityCommand::ChangeVelocityCommand(std::shared_ptr<IVelocityChangeable> velocityChangeable)
@@ -10,19 +10,19 @@ ChangeVelocityCommand::ChangeVelocityCommand(std::shared_ptr<IVelocityChangeable
 
 void ChangeVelocityCommand::execute() {
     try {
-        // Получаем модуль скорости
+        // РџРѕР»СѓС‡Р°РµРј РјРѕРґСѓР»СЊ СЃРєРѕСЂРѕСЃС‚Рё
         int velocity = m_velocityChangeable->getVelocity();
 
-        // Если объект не движется, ничего не делаем
+        // Р•СЃР»Рё РѕР±СЉРµРєС‚ РЅРµ РґРІРёР¶РµС‚СЃСЏ, РЅРёС‡РµРіРѕ РЅРµ РґРµР»Р°РµРј
         if (velocity == 0) {
             return;
         }
 
-        // Получаем текущее направление и количество направлений
+        // РџРѕР»СѓС‡Р°РµРј С‚РµРєСѓС‰РµРµ РЅР°РїСЂР°РІР»РµРЅРёРµ Рё РєРѕР»РёС‡РµСЃС‚РІРѕ РЅР°РїСЂР°РІР»РµРЅРёР№
         int direction = m_velocityChangeable->getDirection();
         int directionsNumber = m_velocityChangeable->getDirectionsNumber();
 
-        // Валидация
+        // Р’Р°Р»РёРґР°С†РёСЏ
         if (directionsNumber <= 0) {
             throw std::runtime_error("DirectionsNumber must be positive");
         }
@@ -32,13 +32,13 @@ void ChangeVelocityCommand::execute() {
                 std::to_string(directionsNumber - 1));
         }
 
-        // Вектор скорости автоматически пересчитывается в MovableAdapter
-        // на основе текущих значений Velocity, Direction и DirectionsNumber.
-        // Поэтому здесь нам не нужно явно изменять вектор скорости -
-        // он будет правильно вычислен при следующем вызове getVelocity() у MovableAdapter
+        // Р’РµРєС‚РѕСЂ СЃРєРѕСЂРѕСЃС‚Рё Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РїРµСЂРµСЃС‡РёС‚С‹РІР°РµС‚СЃСЏ РІ MovableAdapter
+        // РЅР° РѕСЃРЅРѕРІРµ С‚РµРєСѓС‰РёС… Р·РЅР°С‡РµРЅРёР№ Velocity, Direction Рё DirectionsNumber.
+        // РџРѕСЌС‚РѕРјСѓ Р·РґРµСЃСЊ РЅР°Рј РЅРµ РЅСѓР¶РЅРѕ СЏРІРЅРѕ РёР·РјРµРЅСЏС‚СЊ РІРµРєС‚РѕСЂ СЃРєРѕСЂРѕСЃС‚Рё -
+        // РѕРЅ Р±СѓРґРµС‚ РїСЂР°РІРёР»СЊРЅРѕ РІС‹С‡РёСЃР»РµРЅ РїСЂРё СЃР»РµРґСѓСЋС‰РµРј РІС‹Р·РѕРІРµ getVelocity() Сѓ MovableAdapter
 
-        // Эта команда нужна для явного указания момента изменения вектора скорости
-        // и может использоваться для дополнительных действий (логирование, события и т.д.)
+        // Р­С‚Р° РєРѕРјР°РЅРґР° РЅСѓР¶РЅР° РґР»СЏ СЏРІРЅРѕРіРѕ СѓРєР°Р·Р°РЅРёСЏ РјРѕРјРµРЅС‚Р° РёР·РјРµРЅРµРЅРёСЏ РІРµРєС‚РѕСЂР° СЃРєРѕСЂРѕСЃС‚Рё
+        // Рё РјРѕР¶РµС‚ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊСЃСЏ РґР»СЏ РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹С… РґРµР№СЃС‚РІРёР№ (Р»РѕРіРёСЂРѕРІР°РЅРёРµ, СЃРѕР±С‹С‚РёСЏ Рё С‚.Рґ.)
     }
     catch (const std::exception& e) {
         throw std::runtime_error("Failed to change velocity: " + std::string(e.what()));

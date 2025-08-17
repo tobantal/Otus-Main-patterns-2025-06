@@ -1,17 +1,17 @@
-#pragma once
+п»ї#pragma once
 
 #include <stdexcept>
 #include <string>
 
 /**
  * @file CommandException.hpp
- * @brief Исключение для команд
+ * @brief РСЃРєР»СЋС‡РµРЅРёРµ РґР»СЏ РєРѕРјР°РЅРґ
  * @author Space Battle Team
  * @version 1.0
  */
 
  /**
-  * @brief Исключение, выбрасываемое при ошибках выполнения команд
+  * @brief РСЃРєР»СЋС‡РµРЅРёРµ, РІС‹Р±СЂР°СЃС‹РІР°РµРјРѕРµ РїСЂРё РѕС€РёР±РєР°С… РІС‹РїРѕР»РЅРµРЅРёСЏ РєРѕРјР°РЅРґ
   */
 class CommandException : public std::runtime_error {
 public:

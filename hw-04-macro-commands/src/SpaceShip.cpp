@@ -1,4 +1,4 @@
-#include "SpaceShip.hpp"
+п»ї#include "SpaceShip.hpp"
 
 SpaceShip::SpaceShip() = default;
 
@@ -11,10 +11,10 @@ std::any SpaceShip::getProperty(const std::string& key) const {
 }
 
 void SpaceShip::setProperty(const std::string& key, const std::any& value) {
-    // Валидация значений
+    // Р’Р°Р»РёРґР°С†РёСЏ Р·РЅР°С‡РµРЅРёР№
     if (key == "Direction") {
         int direction = std::any_cast<int>(value);
-		auto dn = getProperty("DirectionsNumber"); // DirectionsNumber должно быть установлено заранее
+		auto dn = getProperty("DirectionsNumber"); // DirectionsNumber РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ СѓСЃС‚Р°РЅРѕРІР»РµРЅРѕ Р·Р°СЂР°РЅРµРµ
         int directionsNumber = std::any_cast<int>(dn);
         if (direction < 0 || direction >= directionsNumber) {
             throw std::runtime_error("Direction must be between 0 and " + std::to_string(directionsNumber - 1));

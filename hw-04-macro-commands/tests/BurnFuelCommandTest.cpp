@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
+п»ї#include <gtest/gtest.h>
 #include "BurnFuelCommand.hpp"
 #include "FuelableAdapter.hpp"
 #include "SpaceShip.hpp"
 
 /**
- * @brief Тестовый набор для BurnFuelCommand
+ * @brief РўРµСЃС‚РѕРІС‹Р№ РЅР°Р±РѕСЂ РґР»СЏ BurnFuelCommand
  */
 class BurnFuelCommandTest : public ::testing::Test {
 protected:
@@ -20,7 +20,7 @@ protected:
 };
 
 /**
- * @test Успешное сжигание топлива
+ * @test РЈСЃРїРµС€РЅРѕРµ СЃР¶РёРіР°РЅРёРµ С‚РѕРїР»РёРІР°
  */
 TEST_F(BurnFuelCommandTest, ExecuteSuccessfully) {
     BurnFuelCommand command(fuelable);
@@ -31,7 +31,7 @@ TEST_F(BurnFuelCommandTest, ExecuteSuccessfully) {
 }
 
 /**
- * @test Многократное сжигание топлива
+ * @test РњРЅРѕРіРѕРєСЂР°С‚РЅРѕРµ СЃР¶РёРіР°РЅРёРµ С‚РѕРїР»РёРІР°
  */
 TEST_F(BurnFuelCommandTest, ExecuteMultipleTimes) {
     BurnFuelCommand command(fuelable);
@@ -45,7 +45,7 @@ TEST_F(BurnFuelCommandTest, ExecuteMultipleTimes) {
 }
 
 /**
- * @test Сжигание топлива до отрицательного значения
+ * @test РЎР¶РёРіР°РЅРёРµ С‚РѕРїР»РёРІР° РґРѕ РѕС‚СЂРёС†Р°С‚РµР»СЊРЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ
  */
 TEST_F(BurnFuelCommandTest, BurnToNegativeFuel) {
     spaceShip->setProperty("FuelLevel", 5);
@@ -58,7 +58,7 @@ TEST_F(BurnFuelCommandTest, BurnToNegativeFuel) {
 }
 
 /**
- * @test Сжигание при нулевом расходе
+ * @test РЎР¶РёРіР°РЅРёРµ РїСЂРё РЅСѓР»РµРІРѕРј СЂР°СЃС…РѕРґРµ
  */
 TEST_F(BurnFuelCommandTest, BurnWithZeroConsumption) {
     spaceShip->setProperty("FuelConsumption", 0);
@@ -71,14 +71,14 @@ TEST_F(BurnFuelCommandTest, BurnWithZeroConsumption) {
 }
 
 /**
- * @test Исключение при попытке создать команду с nullptr
+ * @test РСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РїРѕРїС‹С‚РєРµ СЃРѕР·РґР°С‚СЊ РєРѕРјР°РЅРґСѓ СЃ nullptr
  */
 TEST_F(BurnFuelCommandTest, ThrowsOnNullFuelable) {
     ASSERT_THROW(BurnFuelCommand(nullptr), std::invalid_argument);
 }
 
 /**
- * @test Исключение при отсутствии свойства FuelLevel
+ * @test РСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РѕС‚СЃСѓС‚СЃС‚РІРёРё СЃРІРѕР№СЃС‚РІР° FuelLevel
  */
 TEST_F(BurnFuelCommandTest, ThrowsWhenFuelLevelMissing) {
     auto emptyShip = std::make_shared<SpaceShip>();
@@ -89,7 +89,7 @@ TEST_F(BurnFuelCommandTest, ThrowsWhenFuelLevelMissing) {
 }
 
 /**
- * @test Исключение при отсутствии свойства FuelConsumption
+ * @test РСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РѕС‚СЃСѓС‚СЃС‚РІРёРё СЃРІРѕР№СЃС‚РІР° FuelConsumption
  */
 TEST_F(BurnFuelCommandTest, ThrowsWhenFuelConsumptionMissing) {
     auto emptyShip = std::make_shared<SpaceShip>();

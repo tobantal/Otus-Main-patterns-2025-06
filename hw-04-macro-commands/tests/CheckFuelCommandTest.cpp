@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
+п»ї#include <gtest/gtest.h>
 #include "CheckFuelCommand.hpp"
 #include "FuelableAdapter.hpp"
 #include "SpaceShip.hpp"
 
 /**
- * @brief Тестовый набор для CheckFuelCommand
+ * @brief РўРµСЃС‚РѕРІС‹Р№ РЅР°Р±РѕСЂ РґР»СЏ CheckFuelCommand
  */
 class CheckFuelCommandTest : public ::testing::Test {
 protected:
@@ -20,7 +20,7 @@ protected:
 };
 
 /**
- * @test Успешная проверка при достаточном количестве топлива
+ * @test РЈСЃРїРµС€РЅР°СЏ РїСЂРѕРІРµСЂРєР° РїСЂРё РґРѕСЃС‚Р°С‚РѕС‡РЅРѕРј РєРѕР»РёС‡РµСЃС‚РІРµ С‚РѕРїР»РёРІР°
  */
 TEST_F(CheckFuelCommandTest, ExecuteWithSufficientFuel) {
     CheckFuelCommand command(fuelable);
@@ -28,7 +28,7 @@ TEST_F(CheckFuelCommandTest, ExecuteWithSufficientFuel) {
 }
 
 /**
- * @test Проверка при точном совпадении уровня топлива и расхода
+ * @test РџСЂРѕРІРµСЂРєР° РїСЂРё С‚РѕС‡РЅРѕРј СЃРѕРІРїР°РґРµРЅРёРё СѓСЂРѕРІРЅСЏ С‚РѕРїР»РёРІР° Рё СЂР°СЃС…РѕРґР°
  */
 TEST_F(CheckFuelCommandTest, ExecuteWithExactFuel) {
     spaceShip->setProperty("FuelLevel", 10);
@@ -37,7 +37,7 @@ TEST_F(CheckFuelCommandTest, ExecuteWithExactFuel) {
 }
 
 /**
- * @test Исключение при недостаточном количестве топлива
+ * @test РСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РЅРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕРј РєРѕР»РёС‡РµСЃС‚РІРµ С‚РѕРїР»РёРІР°
  */
 TEST_F(CheckFuelCommandTest, ThrowsWhenInsufficientFuel) {
     spaceShip->setProperty("FuelLevel", 5);
@@ -46,7 +46,7 @@ TEST_F(CheckFuelCommandTest, ThrowsWhenInsufficientFuel) {
 }
 
 /**
- * @test Исключение при нулевом уровне топлива
+ * @test РСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РЅСѓР»РµРІРѕРј СѓСЂРѕРІРЅРµ С‚РѕРїР»РёРІР°
  */
 TEST_F(CheckFuelCommandTest, ThrowsWhenNoFuel) {
     spaceShip->setProperty("FuelLevel", 0);
@@ -55,14 +55,14 @@ TEST_F(CheckFuelCommandTest, ThrowsWhenNoFuel) {
 }
 
 /**
- * @test Исключение при попытке создать команду с nullptr
+ * @test РСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РїРѕРїС‹С‚РєРµ СЃРѕР·РґР°С‚СЊ РєРѕРјР°РЅРґСѓ СЃ nullptr
  */
 TEST_F(CheckFuelCommandTest, ThrowsOnNullFuelable) {
     ASSERT_THROW(CheckFuelCommand(nullptr), std::invalid_argument);
 }
 
 /**
- * @test Исключение при отсутствии свойства FuelLevel
+ * @test РСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РѕС‚СЃСѓС‚СЃС‚РІРёРё СЃРІРѕР№СЃС‚РІР° FuelLevel
  */
 TEST_F(CheckFuelCommandTest, ThrowsWhenFuelLevelMissing) {
     auto emptyShip = std::make_shared<SpaceShip>();

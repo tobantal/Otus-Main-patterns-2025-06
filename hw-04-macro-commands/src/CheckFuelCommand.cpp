@@ -1,4 +1,4 @@
-#include "CheckFuelCommand.hpp"
+п»ї#include "CheckFuelCommand.hpp"
 
 CheckFuelCommand::CheckFuelCommand(std::shared_ptr<IFuelable> fuelable)
     : m_fuelable(fuelable) {
@@ -19,7 +19,7 @@ void CheckFuelCommand::execute() {
         }
     }
     catch (const CommandException& e) {
-        throw e; // Пробрасываем CommandException дальше
+        throw e; // РџСЂРѕР±СЂР°СЃС‹РІР°РµРј CommandException РґР°Р»СЊС€Рµ
     }
     catch (const std::exception& e) {
         throw std::runtime_error("Failed to check fuel: " + std::string(e.what()));

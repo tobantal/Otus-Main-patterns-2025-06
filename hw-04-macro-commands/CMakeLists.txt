@@ -1,22 +1,22 @@
-cmake_minimum_required(VERSION 3.14)
+п»їcmake_minimum_required(VERSION 3.14)
 project(hw-04-macro-commands VERSION 1.0.0 LANGUAGES CXX)
 
-# Установка стандарта C++17
+# РЈСЃС‚Р°РЅРѕРІРєР° СЃС‚Р°РЅРґР°СЂС‚Р° C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Добавление путей для поиска заголовочных файлов
+# Р”РѕР±Р°РІР»РµРЅРёРµ РїСѓС‚РµР№ РґР»СЏ РїРѕРёСЃРєР° Р·Р°РіРѕР»РѕРІРѕС‡РЅС‹С… С„Р°Р№Р»РѕРІ
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# Сбор исходных файлов
+# РЎР±РѕСЂ РёСЃС…РѕРґРЅС‹С… С„Р°Р№Р»РѕРІ
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "include/*.hpp")
 
-# Создание библиотеки
+# РЎРѕР·РґР°РЅРёРµ Р±РёР±Р»РёРѕС‚РµРєРё
 add_library(exception_handler_lib ${SOURCES} ${HEADERS})
 
-# Настройка GoogleTest
+# РќР°СЃС‚СЂРѕР№РєР° GoogleTest
 include(FetchContent)
 FetchContent_Declare(
     googletest
@@ -25,31 +25,31 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-# Включение тестирования
+# Р’РєР»СЋС‡РµРЅРёРµ С‚РµСЃС‚РёСЂРѕРІР°РЅРёСЏ
 enable_testing()
 
-# Сбор тестовых файлов
+# РЎР±РѕСЂ С‚РµСЃС‚РѕРІС‹С… С„Р°Р№Р»РѕРІ
 file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
 
-# Создание исполняемого файла для тестов
+# РЎРѕР·РґР°РЅРёРµ РёСЃРїРѕР»РЅСЏРµРјРѕРіРѕ С„Р°Р№Р»Р° РґР»СЏ С‚РµСЃС‚РѕРІ
 add_executable(run_tests ${TEST_SOURCES})
 
-# Линковка с библиотеками
+# Р›РёРЅРєРѕРІРєР° СЃ Р±РёР±Р»РёРѕС‚РµРєР°РјРё
 target_link_libraries(run_tests 
     exception_handler_lib
     GTest::gtest_main
     GTest::gmock_main
 )
 
-# Добавление тестов
+# Р”РѕР±Р°РІР»РµРЅРёРµ С‚РµСЃС‚РѕРІ
 include(GoogleTest)
 gtest_discover_tests(run_tests)
 
-# Демонстрационное приложение
+# Р”РµРјРѕРЅСЃС‚СЂР°С†РёРѕРЅРЅРѕРµ РїСЂРёР»РѕР¶РµРЅРёРµ
 add_executable(demo examples/main.cpp)
 target_link_libraries(demo exception_handler_lib)
 
-# Вывод информации о конфигурации
+# Р’С‹РІРѕРґ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РєРѕРЅС„РёРіСѓСЂР°С†РёРё
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 message(STATUS "CMAKE_CXX_STANDARD: ${CMAKE_CXX_STANDARD}")

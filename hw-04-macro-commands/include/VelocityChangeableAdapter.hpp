@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "IVelocityChangeable.hpp"
 #include "IGameObject.hpp"
@@ -6,7 +6,7 @@
 
 /**
  * @file VelocityChangeableAdapter.hpp
- * @brief Адаптер для изменения скорости
+ * @brief РђРґР°РїС‚РµСЂ РґР»СЏ РёР·РјРµРЅРµРЅРёСЏ СЃРєРѕСЂРѕСЃС‚Рё
  * @author Space Battle Team
  * @version 1.0
  */

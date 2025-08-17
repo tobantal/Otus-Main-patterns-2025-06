@@ -1,4 +1,4 @@
-#include "RotateCommand.hpp"
+п»ї#include "RotateCommand.hpp"
 
 RotateCommand::RotateCommand(std::shared_ptr<IRotatable> rotatable)
     : m_rotatable(rotatable) {
@@ -15,7 +15,7 @@ void RotateCommand::execute() {
 
         int newDirection = (currentDirection + angularVelocity) % directionsNumber;
 
-        // Обработка отрицательных значений для корректного модуля
+        // РћР±СЂР°Р±РѕС‚РєР° РѕС‚СЂРёС†Р°С‚РµР»СЊРЅС‹С… Р·РЅР°С‡РµРЅРёР№ РґР»СЏ РєРѕСЂСЂРµРєС‚РЅРѕРіРѕ РјРѕРґСѓР»СЏ
         if (newDirection < 0) {
             newDirection += directionsNumber;
         }

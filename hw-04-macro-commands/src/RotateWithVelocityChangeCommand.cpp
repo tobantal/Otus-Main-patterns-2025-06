@@ -1,4 +1,4 @@
-#include "RotateWithVelocityChangeCommand.hpp"
+п»ї#include "RotateWithVelocityChangeCommand.hpp"
 #include "CheckFuelCommand.hpp"
 #include "RotateCommand.hpp"
 #include "BurnFuelCommand.hpp"
@@ -14,20 +14,20 @@ RotateWithVelocityChangeCommand::RotateWithVelocityChangeCommand(
     : MacroCommand([&]() {
     std::vector<std::shared_ptr<ICommand>> commands;
 
-    // Если есть топливо, добавляем проверку
+    // Р•СЃР»Рё РµСЃС‚СЊ С‚РѕРїР»РёРІРѕ, РґРѕР±Р°РІР»СЏРµРј РїСЂРѕРІРµСЂРєСѓ
     if (fuelable) {
         commands.push_back(std::make_shared<CheckFuelCommand>(fuelable));
     }
 
-    // Всегда выполняем поворот
+    // Р’СЃРµРіРґР° РІС‹РїРѕР»РЅСЏРµРј РїРѕРІРѕСЂРѕС‚
     commands.push_back(std::make_shared<RotateCommand>(rotatable));
 
-    // Если есть топливо, сжигаем его
+    // Р•СЃР»Рё РµСЃС‚СЊ С‚РѕРїР»РёРІРѕ, СЃР¶РёРіР°РµРј РµРіРѕ
     if (fuelable) {
         commands.push_back(std::make_shared<BurnFuelCommand>(fuelable));
     }
 
-    // Если объект может изменять скорость, изменяем вектор скорости
+    // Р•СЃР»Рё РѕР±СЉРµРєС‚ РјРѕР¶РµС‚ РёР·РјРµРЅСЏС‚СЊ СЃРєРѕСЂРѕСЃС‚СЊ, РёР·РјРµРЅСЏРµРј РІРµРєС‚РѕСЂ СЃРєРѕСЂРѕСЃС‚Рё
     if (velocityChangeable) {
         commands.push_back(std::make_shared<ChangeVelocityCommand>(velocityChangeable));
     }
@@ -46,24 +46,24 @@ RotateWithVelocityChangeCommand::create(
 
     auto rotatable = std::make_shared<RotatableAdapter>(gameObject);
 
-    // Проверяем, движется ли объект
+    // РџСЂРѕРІРµСЂСЏРµРј, РґРІРёР¶РµС‚СЃСЏ Р»Рё РѕР±СЉРµРєС‚
     std::shared_ptr<IVelocityChangeable> velocityChangeable = nullptr;
     try {
-        // Пытаемся получить скорость
+        // РџС‹С‚Р°РµРјСЃСЏ РїРѕР»СѓС‡РёС‚СЊ СЃРєРѕСЂРѕСЃС‚СЊ
         std::any velocityAny = gameObject->getProperty("Velocity");
         int velocity = std::any_cast<int>(velocityAny);
 
-        // Если объект движется, создаем адаптер для изменения скорости
+        // Р•СЃР»Рё РѕР±СЉРµРєС‚ РґРІРёР¶РµС‚СЃСЏ, СЃРѕР·РґР°РµРј Р°РґР°РїС‚РµСЂ РґР»СЏ РёР·РјРµРЅРµРЅРёСЏ СЃРєРѕСЂРѕСЃС‚Рё
         if (velocity > 0) {
             velocityChangeable = std::make_shared<VelocityChangeableAdapter>(gameObject);
         }
     }
     catch (...) {
-        // Объект не имеет скорости или она недоступна
+        // РћР±СЉРµРєС‚ РЅРµ РёРјРµРµС‚ СЃРєРѕСЂРѕСЃС‚Рё РёР»Рё РѕРЅР° РЅРµРґРѕСЃС‚СѓРїРЅР°
         velocityChangeable = nullptr;
     }
 
-    // Создаем адаптер для топлива, если нужно
+    // РЎРѕР·РґР°РµРј Р°РґР°РїС‚РµСЂ РґР»СЏ С‚РѕРїР»РёРІР°, РµСЃР»Рё РЅСѓР¶РЅРѕ
     std::shared_ptr<IFuelable> fuelable = nullptr;
     if (useFuel) {
         fuelable = std::make_shared<FuelableAdapter>(gameObject);

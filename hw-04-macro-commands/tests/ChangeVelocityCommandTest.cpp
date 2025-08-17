@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
+п»ї#include <gtest/gtest.h>
 #include "ChangeVelocityCommand.hpp"
 #include "VelocityChangeableAdapter.hpp"
 #include "SpaceShip.hpp"
 
 /**
- * @brief Тестовый набор для ChangeVelocityCommand
+ * @brief РўРµСЃС‚РѕРІС‹Р№ РЅР°Р±РѕСЂ РґР»СЏ ChangeVelocityCommand
  */
 class ChangeVelocityCommandTest : public ::testing::Test {
 protected:
@@ -21,7 +21,7 @@ protected:
 };
 
 /**
- * @test Успешное выполнение при движущемся объекте
+ * @test РЈСЃРїРµС€РЅРѕРµ РІС‹РїРѕР»РЅРµРЅРёРµ РїСЂРё РґРІРёР¶СѓС‰РµРјСЃСЏ РѕР±СЉРµРєС‚Рµ
  */
 TEST_F(ChangeVelocityCommandTest, ExecuteWithMovingObject) {
     ChangeVelocityCommand command(velocityChangeable);
@@ -29,7 +29,7 @@ TEST_F(ChangeVelocityCommandTest, ExecuteWithMovingObject) {
 }
 
 /**
- * @test Ничего не делает при неподвижном объекте
+ * @test РќРёС‡РµРіРѕ РЅРµ РґРµР»Р°РµС‚ РїСЂРё РЅРµРїРѕРґРІРёР¶РЅРѕРј РѕР±СЉРµРєС‚Рµ
  */
 TEST_F(ChangeVelocityCommandTest, DoesNothingWhenVelocityIsZero) {
     spaceShip->setProperty("Velocity", 0);
@@ -38,7 +38,7 @@ TEST_F(ChangeVelocityCommandTest, DoesNothingWhenVelocityIsZero) {
 }
 
 /**
- * @test Исключение при попытке создать команду с nullptr
+ * @test РСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РїРѕРїС‹С‚РєРµ СЃРѕР·РґР°С‚СЊ РєРѕРјР°РЅРґСѓ СЃ nullptr
  */
 TEST_F(ChangeVelocityCommandTest, ThrowsOnNullVelocityChangeable) {
     ASSERT_THROW(ChangeVelocityCommand(nullptr), std::invalid_argument);

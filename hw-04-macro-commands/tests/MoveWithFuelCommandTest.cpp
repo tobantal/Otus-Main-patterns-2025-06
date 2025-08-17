@@ -1,9 +1,9 @@
-#include <gtest/gtest.h>
+п»ї#include <gtest/gtest.h>
 #include "MoveWithFuelCommand.hpp"
 #include "SpaceShip.hpp"
 
 /**
- * @brief Тестовый набор для MoveWithFuelCommand
+ * @brief РўРµСЃС‚РѕРІС‹Р№ РЅР°Р±РѕСЂ РґР»СЏ MoveWithFuelCommand
  */
 class MoveWithFuelCommandTest : public ::testing::Test {
 protected:
@@ -21,23 +21,23 @@ protected:
 };
 
 /**
- * @test Успешное движение с расходом топлива
+ * @test РЈСЃРїРµС€РЅРѕРµ РґРІРёР¶РµРЅРёРµ СЃ СЂР°СЃС…РѕРґРѕРј С‚РѕРїР»РёРІР°
  */
 TEST_F(MoveWithFuelCommandTest, ExecuteSuccessfully) {
     auto command = MoveWithFuelCommand::create(spaceShip);
     command->execute();
 
-    // Проверяем изменение позиции
+    // РџСЂРѕРІРµСЂСЏРµРј РёР·РјРµРЅРµРЅРёРµ РїРѕР·РёС†РёРё
     Vector2D newPosition = std::any_cast<Vector2D>(spaceShip->getProperty("Position"));
     ASSERT_EQ(Vector2D(10, 0), newPosition);
 
-    // Проверяем расход топлива
+    // РџСЂРѕРІРµСЂСЏРµРј СЂР°СЃС…РѕРґ С‚РѕРїР»РёРІР°
     int newFuelLevel = std::any_cast<int>(spaceShip->getProperty("FuelLevel"));
     ASSERT_EQ(90, newFuelLevel);
 }
 
 /**
- * @test Исключение при недостаточном топливе
+ * @test РСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РЅРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕРј С‚РѕРїР»РёРІРµ
  */
 TEST_F(MoveWithFuelCommandTest, ThrowsWhenInsufficientFuel) {
     spaceShip->setProperty("FuelLevel", 5);
@@ -45,11 +45,11 @@ TEST_F(MoveWithFuelCommandTest, ThrowsWhenInsufficientFuel) {
 
     ASSERT_THROW(command->execute(), CommandException);
 
-    // Проверяем, что позиция не изменилась
+    // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РїРѕР·РёС†РёСЏ РЅРµ РёР·РјРµРЅРёР»Р°СЃСЊ
     Vector2D position = std::any_cast<Vector2D>(spaceShip->getProperty("Position"));
     ASSERT_EQ(Vector2D(0, 0), position);
 
-    // Проверяем, что топливо не было сожжено
+    // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ С‚РѕРїР»РёРІРѕ РЅРµ Р±С‹Р»Рѕ СЃРѕР¶Р¶РµРЅРѕ
     int fuelLevel = std::any_cast<int>(spaceShip->getProperty("FuelLevel"));
     ASSERT_EQ(5, fuelLevel);
 }

@@ -1,4 +1,4 @@
-#include "BurnFuelCommand.hpp"
+ï»¿#include "BurnFuelCommand.hpp"
 
 BurnFuelCommand::BurnFuelCommand(std::shared_ptr<IFuelable> fuelable)
     : m_fuelable(fuelable) {
@@ -13,7 +13,7 @@ void BurnFuelCommand::execute() {
         int consumption = m_fuelable->getFuelConsumption();
         int newFuelLevel = currentFuel - consumption;
 
-        // Óñòàíàâëèâàåì íîâûé óðîâåíü òîïëèâà
+        // Ð£ÑÑ‚Ð°Ð½Ð°Ð²Ð»Ð¸Ð²Ð°ÐµÐ¼ Ð½Ð¾Ð²Ñ‹Ð¹ ÑƒÑ€Ð¾Ð²ÐµÐ½ÑŒ Ñ‚Ð¾Ð¿Ð»Ð¸Ð²Ð°
         m_fuelable->setFuelLevel(newFuelLevel);
     }
     catch (const std::exception& e) {

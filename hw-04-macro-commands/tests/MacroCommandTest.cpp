@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+п»ї#include <gtest/gtest.h>
 #include "MacroCommand.hpp"
 #include "MoveCommand.hpp"
 #include "RotateCommand.hpp"
@@ -10,7 +10,7 @@
 #include "SpaceShip.hpp"
 
 /**
- * @brief Тестовый набор для MacroCommand
+ * @brief РўРµСЃС‚РѕРІС‹Р№ РЅР°Р±РѕСЂ РґР»СЏ MacroCommand
  */
 class MacroCommandTest : public ::testing::Test {
 protected:
@@ -29,7 +29,7 @@ protected:
 };
 
 /**
- * @test Успешное выполнение последовательности команд
+ * @test РЈСЃРїРµС€РЅРѕРµ РІС‹РїРѕР»РЅРµРЅРёРµ РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕСЃС‚Рё РєРѕРјР°РЅРґ
  */
 TEST_F(MacroCommandTest, ExecuteSequenceSuccessfully) {
     auto movable = std::make_shared<MovableAdapter>(spaceShip);
@@ -51,34 +51,34 @@ TEST_F(MacroCommandTest, ExecuteSequenceSuccessfully) {
 }
 
 /**
- * @test Прерывание выполнения при исключении CommandException
+ * @test РџСЂРµСЂС‹РІР°РЅРёРµ РІС‹РїРѕР»РЅРµРЅРёСЏ РїСЂРё РёСЃРєР»СЋС‡РµРЅРёРё CommandException
  */
 TEST_F(MacroCommandTest, StopsOnCommandException) {
-    spaceShip->setProperty("FuelLevel", 5); // Недостаточно топлива
+    spaceShip->setProperty("FuelLevel", 5); // РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ С‚РѕРїР»РёРІР°
 
     auto movable = std::make_shared<MovableAdapter>(spaceShip);
     auto fuelable = std::make_shared<FuelableAdapter>(spaceShip);
 
     std::vector<std::shared_ptr<ICommand>> commands = {
-        std::make_shared<CheckFuelCommand>(fuelable),  // Выбросит исключение
-        std::make_shared<MoveCommand>(movable),         // Не должно выполниться
-        std::make_shared<BurnFuelCommand>(fuelable)     // Не должно выполниться
+        std::make_shared<CheckFuelCommand>(fuelable),  // Р’С‹Р±СЂРѕСЃРёС‚ РёСЃРєР»СЋС‡РµРЅРёРµ
+        std::make_shared<MoveCommand>(movable),         // РќРµ РґРѕР»Р¶РЅРѕ РІС‹РїРѕР»РЅРёС‚СЊСЃСЏ
+        std::make_shared<BurnFuelCommand>(fuelable)     // РќРµ РґРѕР»Р¶РЅРѕ РІС‹РїРѕР»РЅРёС‚СЊСЃСЏ
     };
 
     MacroCommand macro(commands);
     ASSERT_THROW(macro.execute(), CommandException);
 
-    // Проверяем, что позиция не изменилась
+    // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РїРѕР·РёС†РёСЏ РЅРµ РёР·РјРµРЅРёР»Р°СЃСЊ
     Vector2D position = std::any_cast<Vector2D>(spaceShip->getProperty("Position"));
     ASSERT_EQ(Vector2D(0, 0), position);
 
-    // Проверяем, что топливо не было сожжено
+    // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ С‚РѕРїР»РёРІРѕ РЅРµ Р±С‹Р»Рѕ СЃРѕР¶Р¶РµРЅРѕ
     int fuelLevel = std::any_cast<int>(spaceShip->getProperty("FuelLevel"));
     ASSERT_EQ(5, fuelLevel);
 }
 
 /**
- * @test Исключение при пустом векторе команд
+ * @test РСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РїСѓСЃС‚РѕРј РІРµРєС‚РѕСЂРµ РєРѕРјР°РЅРґ
  */
 TEST_F(MacroCommandTest, ThrowsOnEmptyCommands) {
     std::vector<std::shared_ptr<ICommand>> emptyCommands;
@@ -88,14 +88,14 @@ TEST_F(MacroCommandTest, ThrowsOnEmptyCommands) {
 }
 
 /**
- * @test Исключение при наличии nullptr в векторе команд
+ * @test РСЃРєР»СЋС‡РµРЅРёРµ РїСЂРё РЅР°Р»РёС‡РёРё nullptr РІ РІРµРєС‚РѕСЂРµ РєРѕРјР°РЅРґ
  */
 TEST_F(MacroCommandTest, ThrowsOnNullCommand) {
     auto movable = std::make_shared<MovableAdapter>(spaceShip);
 
     std::vector<std::shared_ptr<ICommand>> commands = {
         std::make_shared<MoveCommand>(movable),
-        nullptr,  // Недопустимо
+        nullptr,  // РќРµРґРѕРїСѓСЃС‚РёРјРѕ
         std::make_shared<MoveCommand>(movable)
     };
 
