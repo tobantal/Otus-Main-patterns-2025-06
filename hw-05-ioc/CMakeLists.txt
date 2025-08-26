@@ -14,7 +14,7 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "include/*.hpp")
 
 # Создание библиотеки
-add_library(exception_handler_lib ${SOURCES} ${HEADERS})
+add_library(project_lib ${SOURCES})
 
 # Настройка GoogleTest
 include(FetchContent)
