@@ -367,4 +367,4 @@ FodyWeavers.xsd
 **/CppProperties.json
 
 # VS Code
-/.vscode
+.vscode
