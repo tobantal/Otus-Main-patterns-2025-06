@@ -365,3 +365,6 @@ FodyWeavers.xsd
 # VS testing
 **/Testing/
 **/CppProperties.json
+
+# VS Code
+.vscode
