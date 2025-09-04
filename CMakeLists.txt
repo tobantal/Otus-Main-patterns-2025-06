@@ -28,3 +28,4 @@ enable_testing()
 #add_subdirectory ("hw-04-macro-commands")
 
 add_subdirectory("hw-05-ioc")
+#add_subdirectory("hw-06-adapter")
