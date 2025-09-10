@@ -226,9 +226,68 @@ std::string AdapterCodeGenerator::generateMethod(
     } else if (method.isVoidMethod()) {
         return generateVoidMethod(interface, method);
     } else {
-        // Неопознанный тип метода - используем кастомную реализацию
-        return generateVoidMethod(interface, method);
+        // Универсальная генерация IoC-метода
+        return generateIoCMethod(interface, method);
     }
+}
+
+std::string AdapterCodeGenerator::generateIoCMethod(
+    const InterfaceInfo& interface,
+    const MethodInfo& method) {
+
+    std::map<std::string, std::string> vars = variables_;
+    vars["METHOD_NAME"] = method.name;
+    vars["CONST_QUALIFIER"] = method.isConst ? " const" : "";
+    vars["RETURN_TYPE"] = method.returnType;
+    vars["METHOD_KEY"] = method.name;
+
+    // Формируем параметры сигнатуры и передачи
+    std::ostringstream params;
+    std::ostringstream paramPass;
+    for (size_t i = 0; i < method.parameters.size(); ++i) {
+        if (i > 0) {
+            params << ", ";
+            paramPass << ", ";
+        }
+        params << method.parameters[i];
+        // Извлечь имя параметра
+        std::string p = method.parameters[i];
+        auto pos = p.find_last_of(' ');
+        paramPass << (pos == std::string::npos ? p : p.substr(pos + 1));
+    }
+    vars["PARAMETERS"] = params.str();
+    vars["PARAMETER_PASS"] = paramPass.str().empty() ? "" : ", " + paramPass.str();
+
+    // Выбрать шаблон: void или non-void
+    const std::string& tmpl = (method.returnType == "void")
+        ? R"(
+    /**
+     * @brief Execute {METHOD_NAME} operation
+     */
+    void {METHOD_NAME}({PARAMETERS}){CONST_QUALIFIER} override {
+        try {
+            auto command = IoC::resolve<ICommand>("{INTERFACE_NAME}:{METHOD_KEY}", m_gameObject{PARAMETER_PASS});
+            command->execute();
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot execute {METHOD_NAME}: " + std::string(e.what()));
+        }
+    }
+)"
+        : R"(
+    /**
+     * @brief Execute {METHOD_NAME} operation
+     * @return {RETURN_TYPE} from IoC container
+     */
+    {RETURN_TYPE} {METHOD_NAME}({PARAMETERS}){CONST_QUALIFIER} override {
+        try {
+            return IoC::resolve<{RETURN_TYPE}>("{INTERFACE_NAME}:{METHOD_KEY}", m_gameObject{PARAMETER_PASS});
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot execute {METHOD_NAME}: " + std::string(e.what()));
+        }
+    }
+)";
+
+    return renderTemplate(tmpl, vars);
 }
 
 std::string AdapterCodeGenerator::generateGetter(

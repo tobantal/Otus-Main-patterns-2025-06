@@ -71,6 +71,14 @@ private:
     std::string generateMethod(const InterfaceInfo& interface, const MethodInfo& method);
 
     /**
+     * @brief Генерирует универсальный метод для IoC
+     * @param interface Информация об интерфейсе
+     * @param method Информация о методе
+     * @return Сгенерированный код метода
+     */
+    std::string generateIoCMethod(const InterfaceInfo &, const MethodInfo &method);
+
+    /**
      * @brief Генерирует геттер метод
      * @param interface Информация об интерфейсе
      * @param method Информация о методе
