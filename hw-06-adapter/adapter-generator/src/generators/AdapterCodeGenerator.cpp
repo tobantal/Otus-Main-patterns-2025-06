@@ -61,7 +61,7 @@ const std::string AdapterCodeGenerator::GETTER_METHOD_TEMPLATE = R"(
      */
     {RETURN_TYPE} {METHOD_NAME}(){CONST_QUALIFIER} override {
         try {
-            return IoC::resolve<{RETURN_TYPE}>("{INTERFACE_NAME}:{PROPERTY_NAME}.get", m_gameObject);
+            return IoC::resolve<{RETURN_TYPE}>("{FULL_INTERFACE_NAME}:{PROPERTY_NAME}.get", m_gameObject);
         } catch (const std::exception& e) {
             throw std::runtime_error("Cannot get {PROPERTY_NAME}: " + std::string(e.what()));
         }
@@ -75,7 +75,7 @@ const std::string AdapterCodeGenerator::SETTER_METHOD_TEMPLATE = R"(
      */
     void {METHOD_NAME}({PARAM_TYPE} value) override {
         try {
-            auto command = IoC::resolve<ICommand>("{INTERFACE_NAME}:{PROPERTY_NAME}.set", 
+            auto command = IoC::resolve<ICommand>("{FULL_INTERFACE_NAME}:{PROPERTY_NAME}.set", 
                                                  m_gameObject, std::make_shared<{PARAM_TYPE_CLEAN}>(value));
             command->execute();
         } catch (const std::exception& e) {
@@ -90,7 +90,7 @@ const std::string AdapterCodeGenerator::VOID_METHOD_TEMPLATE = R"(
      */
     void {METHOD_NAME}() override {
         try {
-            auto command = IoC::resolve<ICommand>("{INTERFACE_NAME}:{METHOD_KEY}", m_gameObject);
+            auto command = IoC::resolve<ICommand>("{FULL_INTERFACE_NAME}:{METHOD_KEY}", m_gameObject);
             command->execute();
         } catch (const std::exception& e) {
             throw std::runtime_error("Cannot execute {METHOD_NAME}: " + std::string(e.what()));
@@ -389,17 +389,19 @@ std::string AdapterCodeGenerator::generateIncludes(const std::vector<InterfaceIn
     std::set<std::string> uniqueIncludes;
     
     for (const auto& interface : interfaces) {
-        auto includes = interface.getRequiredIncludes();
-        uniqueIncludes.insert(includes.begin(), includes.end());
-        
-        // Добавляем include для адаптера
+        // include интерфейса
+        uniqueIncludes.insert(interface.className + ".hpp");
+        // include адаптера
         uniqueIncludes.insert(interface.getAdapterName() + ".hpp");
     }
+
+    // стандартные зависимости
+    uniqueIncludes.insert("ICommand.hpp");
+    uniqueIncludes.insert("IoC.hpp");
 
     std::ostringstream result;
     for (const auto& include : uniqueIncludes) {
         result << "#include \"" << include << "\"\n";
     }
-
     return result.str();
 }
