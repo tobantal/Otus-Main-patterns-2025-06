@@ -169,10 +169,6 @@ TEST_F(SimpleInterfaceParserTest, ParseInterfaceWithCustomImplementations) {
     // Проверяем третий метод без кастомной реализации
     const auto& setPosition = interfaces[0].methods[2];
 
-    std::cout << "$$$$ hasCustom=" << setPosition.customImpl.hasCustom 
-    << ", isValid="
-    << setPosition.customImpl.isValid() << std::endl;
-
     EXPECT_FALSE(setPosition.hasCustomImplementation());
 }
 

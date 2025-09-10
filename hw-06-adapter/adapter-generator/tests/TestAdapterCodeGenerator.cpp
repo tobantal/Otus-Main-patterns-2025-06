@@ -92,8 +92,10 @@ TEST_F(AdapterCodeGeneratorTest, GenerateSetterMethod) {
     std::string result = generator->generateAdapter(testInterface);
     
     // Проверяем setter метод
-    EXPECT_NE(result.find("void setPosition(const Vector& pos) override"), std::string::npos);
-    EXPECT_NE(result.find("IoC::resolve(\"IMovable:Position.set\", obj_, pos)->execute()"), std::string::npos);
+    EXPECT_NE(result.find("void setPosition(const Vector& value) override"), std::string::npos);
+    EXPECT_NE(result.find("IoC::resolve<ICommand>(\"IMovable:Position.set\""), std::string::npos);
+    EXPECT_NE(result.find("m_gameObject, std::make_shared<Vector>(value)"), std::string::npos);
+    EXPECT_NE(result.find("command->execute()"), std::string::npos);
 }
 
 /**
@@ -104,7 +106,8 @@ TEST_F(AdapterCodeGeneratorTest, GenerateVoidMethod) {
     
     // Проверяем void метод
     EXPECT_NE(result.find("void finish() override"), std::string::npos);
-    EXPECT_NE(result.find("IoC::resolve(\"IMovable:finish\", obj_)->execute()"), std::string::npos);
+    EXPECT_NE(result.find("command = IoC::resolve<ICommand>(\"IMovable:finish\", m_gameObject)"), std::string::npos);
+    EXPECT_NE(result.find("command->execute()"), std::string::npos);
 }
 
 /**
