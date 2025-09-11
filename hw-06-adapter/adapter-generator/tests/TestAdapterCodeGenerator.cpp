@@ -161,13 +161,12 @@ TEST_F(AdapterCodeGeneratorTest, GenerateRegistrationCodeSingleInterface) {
     std::string result = generator->generateRegistrationCode(interfaces);
     
     // Проверяем основную структуру
-    EXPECT_NE(result.find("class AdapterRegistration"), std::string::npos);
+    EXPECT_NE(result.find("class AdapterRegistry"), std::string::npos);
     EXPECT_NE(result.find("static void registerAll()"), std::string::npos);
     
     // Проверяем регистрацию конкретного адаптера
-    EXPECT_NE(result.find("IoC::resolve(\"IoC.Register\""), std::string::npos);
-    EXPECT_NE(result.find("\"Adapter:IMovable\""), std::string::npos);
-    EXPECT_NE(result.find("std::make_shared<MovableAdapter>"), std::string::npos);
+    EXPECT_NE(result.find("IoC::resolve<ICommand>(\"IoC.Register\""), std::string::npos);
+    EXPECT_NE(result.find("\"MovableAdapter\""), std::string::npos);
 }
 
 /**
@@ -191,10 +190,8 @@ TEST_F(AdapterCodeGeneratorTest, GenerateRegistrationCodeMultipleInterfaces) {
     std::string result = generator->generateRegistrationCode(interfaces);
     
     // Проверяем регистрацию обоих адаптеров
-    EXPECT_NE(result.find("\"Adapter:IMovable\""), std::string::npos);
-    EXPECT_NE(result.find("\"Adapter:IRotatable\""), std::string::npos);
-    EXPECT_NE(result.find("std::make_shared<MovableAdapter>"), std::string::npos);
-    EXPECT_NE(result.find("std::make_shared<RotatableAdapter>"), std::string::npos);
+    EXPECT_NE(result.find("\"MovableAdapter\""), std::string::npos);
+    EXPECT_NE(result.find("\"RotatableAdapter\""), std::string::npos);
 }
 
 /**

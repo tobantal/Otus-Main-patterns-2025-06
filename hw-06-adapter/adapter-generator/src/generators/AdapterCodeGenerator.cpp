@@ -141,19 +141,23 @@ private:
      * @brief Register single adapter type
      * @tparam TInterface Interface type
      * @tparam TAdapter Adapter type
-     * @param key Registration key
+     * @param adapterKey Key for adapter factory registration
+     * @param interfaceType Type info for interface
      */
     template<typename TInterface, typename TAdapter>
-    static void registerAdapter(const std::string& key) {
-        auto factory = std::make_shared<std::function<std::shared_ptr<void>()>>(
-            []() -> std::shared_ptr<void> {
-                // This would be resolved at runtime with actual game object
-                throw std::runtime_error("Adapter factory needs game object parameter");
+    static void registerAdapter(const std::string& adapterKey, const std::type_info& interfaceType) {
+        // Создаем фабрику, которая принимает IGameObject и создает адаптер
+        auto factory = std::make_shared<std::function<std::shared_ptr<TInterface>(std::shared_ptr<IGameObject>)>>(
+            [](std::shared_ptr<IGameObject> obj) -> std::shared_ptr<TInterface> {
+                return std::make_shared<TAdapter>(obj);
             }
         );
         
-        auto keyPtr = std::make_shared<std::string>(key);
-        std::vector<std::shared_ptr<void>> args = {keyPtr, factory};
+        // Регистрируем фабрику в IoC контейнере
+        auto keyPtr = std::make_shared<std::string>(adapterKey);
+        auto typePtr = std::make_shared<std::type_info>(interfaceType);
+        
+        std::vector<std::shared_ptr<void>> args = {keyPtr, typePtr, factory};
         
         auto registerCommand = IoC::resolve<ICommand>("IoC.Register", args);
         registerCommand->execute();
@@ -202,7 +206,7 @@ std::string AdapterCodeGenerator::generateRegistrationCode(
         registrations << "        // Register " << interface.className << " adapter\n";
         registrations << "        registerAdapter<" << interface.getFullName() 
                      << ", " << interface.getAdapterName() 
-                     << ">(\"Adapter:" << interface.className << "\");\n\n";
+                     << ">(\"" << interface.getAdapterName() << "\", typeid(" << interface.getFullName() << "));\n\n";
     }
     vars["REGISTRATIONS"] = registrations.str();
 
