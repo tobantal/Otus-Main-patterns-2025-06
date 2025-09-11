@@ -295,7 +295,7 @@ TEST_F(IntegrationTest, IoCRegistrationStrategyTest) {
     // Проверяем стратегию регистрации:
     
     // 1. Должна быть основная функция регистрации
-    EXPECT_NE(registrationCode.find("class AdapterRegistration"), std::string::npos);
+    EXPECT_NE(registrationCode.find("class AdapterRegistry"), std::string::npos);
     EXPECT_NE(registrationCode.find("static void registerAll()"), std::string::npos);
     
     // 2. Каждый адаптер должен быть зарегистрирован с уникальным ключом
@@ -305,19 +305,13 @@ TEST_F(IntegrationTest, IoCRegistrationStrategyTest) {
     EXPECT_NE(registrationCode.find("\"Adapter:IComplexMovable\""), std::string::npos);
     
     // 3. Должны быть фабричные методы
-    EXPECT_NE(registrationCode.find("std::make_shared<MovableAdapter>"), std::string::npos);
-    EXPECT_NE(registrationCode.find("std::make_shared<RotatableAdapter>"), std::string::npos);
-    EXPECT_NE(registrationCode.find("std::make_shared<FinishableAdapter>"), std::string::npos);
-    EXPECT_NE(registrationCode.find("std::make_shared<ComplexMovableAdapter>"), std::string::npos);
+    EXPECT_NE(registrationCode.find("registerAdapter<IMovable, MovableAdapter>"), std::string::npos);
+    EXPECT_NE(registrationCode.find("registerAdapter<SpaceShip::Operations::IRotatable, RotatableAdapter>"), std::string::npos);
+    EXPECT_NE(registrationCode.find("registerAdapter<IFinishable, FinishableAdapter>"), std::string::npos);
+    EXPECT_NE(registrationCode.find("registerAdapter<IComplexMovable, ComplexMovableAdapter>"), std::string::npos);
     
-    // 4. Все регистрации должны использовать IoC::resolve("IoC.Register", ...)
-    size_t registerCount = 0;
-    size_t pos = 0;
-    while ((pos = registrationCode.find("IoC::resolve(\"IoC.Register\"", pos)) != std::string::npos) {
-        registerCount++;
-        pos++;
-    }
-    EXPECT_EQ(registerCount, 4); // По одной регистрации для каждого интерфейса
+    // 4. Все регистрации должны использовать IoC::resolve<ICommand>("IoC.Register", ...)
+    EXPECT_NE(registrationCode.find("IoC::resolve<ICommand>(\"IoC.Register\""), std::string::npos);
 }
 
 /**

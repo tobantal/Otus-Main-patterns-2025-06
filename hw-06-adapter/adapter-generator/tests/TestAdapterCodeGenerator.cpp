@@ -166,7 +166,7 @@ TEST_F(AdapterCodeGeneratorTest, GenerateRegistrationCodeSingleInterface) {
     
     // Проверяем регистрацию конкретного адаптера
     EXPECT_NE(result.find("IoC::resolve<ICommand>(\"IoC.Register\""), std::string::npos);
-    EXPECT_NE(result.find("\"MovableAdapter\""), std::string::npos);
+    EXPECT_NE(result.find("\"Adapter:IMovable\""), std::string::npos);
 }
 
 /**
@@ -190,8 +190,8 @@ TEST_F(AdapterCodeGeneratorTest, GenerateRegistrationCodeMultipleInterfaces) {
     std::string result = generator->generateRegistrationCode(interfaces);
     
     // Проверяем регистрацию обоих адаптеров
-    EXPECT_NE(result.find("\"MovableAdapter\""), std::string::npos);
-    EXPECT_NE(result.find("\"RotatableAdapter\""), std::string::npos);
+    EXPECT_NE(result.find("\"Adapter:IMovable\""), std::string::npos);
+    EXPECT_NE(result.find("\"Adapter:IRotatable\""), std::string::npos);
 }
 
 /**

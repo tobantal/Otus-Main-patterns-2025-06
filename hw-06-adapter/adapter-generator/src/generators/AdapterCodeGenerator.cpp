@@ -10,6 +10,7 @@
 #include <sstream>
 #include <algorithm>
 #include <set>
+#include <iostream>
 
 // Определение статических шаблонов
 const std::string AdapterCodeGenerator::ADAPTER_TEMPLATE = R"(
@@ -206,7 +207,7 @@ std::string AdapterCodeGenerator::generateRegistrationCode(
         registrations << "        // Register " << interface.className << " adapter\n";
         registrations << "        registerAdapter<" << interface.getFullName() 
                      << ", " << interface.getAdapterName() 
-                     << ">(\"" << interface.getAdapterName() << "\", typeid(" << interface.getFullName() << "));\n\n";
+                     << ">(\"Adapter:" << interface.getFullName() << "\", typeid(" << interface.getFullName() << "));\n\n";
     }
     vars["REGISTRATIONS"] = registrations.str();
 
@@ -386,6 +387,9 @@ std::string AdapterCodeGenerator::renderTemplate(
         std::string placeholder = "{" + key + "}";
         result = StringUtils::replaceAll(result, placeholder, value);
     }
+
+    std::cout << result << std::endl;
+
     return result;
 }
 
