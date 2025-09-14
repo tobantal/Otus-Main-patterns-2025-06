@@ -200,7 +200,7 @@ TEST_F(SimpleInterfaceParserTest, ParseMultipleInterfaces) {
 
     auto interfaces = parser->parseContent(testContent);
 
-    // Должны найти только 2 интерфейса
+    // Должны найтись все 3 интерфейса
     ASSERT_EQ(interfaces.size(), 3);
     
     // Проверяем первый интерфейс
