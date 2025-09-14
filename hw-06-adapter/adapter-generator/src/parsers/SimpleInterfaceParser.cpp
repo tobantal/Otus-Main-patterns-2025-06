@@ -19,8 +19,7 @@ SimpleInterfaceParser::SimpleInterfaceParser() {
     
     // Регулярное выражение для поиска чисто виртуальных методов
     methodRegex_ = std::regex(
-        // R"(virtual\s+(.+?)\s+(\w+)\s*\(([^)]*)\)\s*(const)?\s*=\s*0\s*;)"
-        R"(\bvirtual\s+(.+?)\s+(\w+)\s*\(([^)]*)\)\s*(const)?\s*(?:=\s*0)?)"
+        R"(\bvirtual\s+(.+?)\s+(\w+)\s*\(([^)]*)\)\s*(const)?\s*=\s*0\s*;)"
     );
     
     // Регулярное выражение для поиска namespace

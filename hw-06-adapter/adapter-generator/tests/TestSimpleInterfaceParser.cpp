@@ -189,8 +189,9 @@ TEST_F(SimpleInterfaceParserTest, ParseMultipleInterfaces) {
             virtual void setDirection(int direction) = 0;
         };
         
-        // Это не интерфейс - есть не виртуальные методы
-        class NotAnInterface {
+        // Это не чистый интерфейс - есть не виртуальные методы
+        // генерим адаптер, считается, что пользователь осознает, что ему нужны также не виртальные методы
+        class NotPureInterface {
         public:
             virtual void virtualMethod() = 0;
             void regularMethod() {}
@@ -200,7 +201,7 @@ TEST_F(SimpleInterfaceParserTest, ParseMultipleInterfaces) {
     auto interfaces = parser->parseContent(testContent);
 
     // Должны найти только 2 интерфейса
-    ASSERT_EQ(interfaces.size(), 2);
+    ASSERT_EQ(interfaces.size(), 3);
     
     // Проверяем первый интерфейс
     EXPECT_EQ(interfaces[0].className, "IMovable");
@@ -209,6 +210,10 @@ TEST_F(SimpleInterfaceParserTest, ParseMultipleInterfaces) {
     // Проверяем второй интерфейс
     EXPECT_EQ(interfaces[1].className, "IRotatable");
     EXPECT_EQ(interfaces[1].methods.size(), 2);
+
+    // Проверяем третий интерфейс
+    EXPECT_EQ(interfaces[2].className, "NotPureInterface");
+    EXPECT_EQ(interfaces[2].methods.size(), 1);
 }
 
 /**
