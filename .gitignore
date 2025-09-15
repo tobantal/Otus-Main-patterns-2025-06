@@ -368,3 +368,6 @@ FodyWeavers.xsd
 
 # VS Code
 .vscode
+
+# generated data
+generated/

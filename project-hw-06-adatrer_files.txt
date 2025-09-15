@@ -1,0 +1,4910 @@
+Структура проекта:
+.
+├── adapter-generator
+│   ├── CMakeLists.txt
+│   ├── include
+│   │   ├── generators
+│   │   │   └── AdapterCodeGenerator.hpp
+│   │   ├── interfaces
+│   │   │   ├── ICodeGenerator.hpp
+│   │   │   └── IInterfaceParser.hpp
+│   │   ├── models
+│   │   │   ├── CustomImplementation.hpp
+│   │   │   ├── InterfaceInfo.hpp
+│   │   │   └── MethodInfo.hpp
+│   │   ├── parsers
+│   │   │   └── SimpleInterfaceParser.hpp
+│   │   └── utils
+│   │       ├── FileUtils.hpp
+│   │       └── StringUtils.hpp
+│   ├── main.cpp
+│   ├── src
+│   │   ├── generators
+│   │   │   └── AdapterCodeGenerator.cpp
+│   │   ├── models
+│   │   │   ├── CustomImplementation.cpp
+│   │   │   ├── InterfaceInfo.cpp
+│   │   │   └── MethodInfo.cpp
+│   │   ├── parsers
+│   │   │   └── SimpleInterfaceParser.cpp
+│   │   └── utils
+│   │       ├── FileUtils.cpp
+│   │       └── StringUtils.cpp
+│   └── tests
+│       ├── TestAdapterCodeGenerator.cpp
+│       ├── TestCustomImplementation.cpp
+│       ├── TestFileUtils.cpp
+│       ├── TestIntegration.cpp
+│       ├── TestMethodInfo.cpp
+│       └── TestSimpleInterfaceParser.cpp
+├── CMakeLists.txt
+├── docs
+│   ├── adapter-generator-example.md
+│   └── konspekt-adapter-generation.md
+├── generated
+│   └── adapters
+│       ├── AdapterRegistry.hpp
+│       └── MovableAdapter.hpp
+├── include
+│   ├── custom_implementations
+│   │   └── MovableImplementations.hpp
+│   └── interfaces
+│       ├── CommandGetter.hpp
+│       ├── CommandSetter.hpp
+│       ├── IMovable.hpp
+│       └── IRotatable.hpp
+├── main.cpp
+├── README.md
+├── src
+│   └── CommandSetter.cpp
+└── tests
+    └── CommandSetterTest.cpp
+
+21 directories, 38 files
+
+===== adapter-generator/CMakeLists.txt ====
+project(AdapterGenerator VERSION 1.0.0 LANGUAGES CXX)
+
+# Включаем заголовочные файлы
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+# Исходные файлы для библиотеки (без main.cpp)
+file(GLOB_RECURSE LIB_SOURCES "src/*.cpp")
+file(GLOB_RECURSE HEADERS "include/*.hpp")
+
+# Создаем статическую библиотеку (для переиспользования в тестах)
+add_library(adapter_generator_lib ${LIB_SOURCES} ${HEADERS})
+
+# Создаем основной исполняемый файл
+add_executable(adapter_generator main.cpp)
+target_link_libraries(adapter_generator adapter_generator_lib)
+
+# Настройка GoogleTest
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG release-1.12.1
+)
+FetchContent_MakeAvailable(googletest)
+
+# Включение тестирования
+enable_testing()
+
+# Сбор тестовых файлов
+file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
+
+# Создание исполняемого файла для тестов
+add_executable(run_tests ${TEST_SOURCES})
+
+# Линковка с библиотеками
+target_link_libraries(run_tests 
+    adapter_generator_lib
+    GTest::gtest_main
+    GTest::gmock_main
+)
+
+# Добавление тестов
+include(GoogleTest)
+gtest_discover_tests(run_tests)
+
+# Установка
+install(TARGETS adapter_generator DESTINATION bin)
+===== adapter-generator/include/generators/AdapterCodeGenerator.hpp ====
+/**
+ * @file AdapterCodeGenerator.hpp
+ * @brief Генератор кода адаптеров на C++
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#pragma once
+
+#include "../interfaces/ICodeGenerator.hpp"
+#include <map>
+
+/**
+ * @brief Генератор кода адаптеров на C++
+ * 
+ * Создает код адаптеров паттерна Adapter для интерфейсов,
+ * используя шаблоны кода и подстановку переменных.
+ * Поддерживает кастомные реализации методов через аннотации.
+ */
+class AdapterCodeGenerator : public ICodeGenerator {
+private:
+    static const std::string ADAPTER_TEMPLATE;           ///< Шаблон класса адаптера
+    static const std::string GETTER_METHOD_TEMPLATE;     ///< Шаблон геттер метода
+    static const std::string SETTER_METHOD_TEMPLATE;     ///< Шаблон сеттер метода
+    static const std::string VOID_METHOD_TEMPLATE;       ///< Шаблон void метода
+    static const std::string CUSTOM_METHOD_TEMPLATE;     ///< Шаблон кастомного метода
+    static const std::string REGISTRATION_TEMPLATE;      ///< Шаблон регистрации
+
+    std::map<std::string, std::string> variables_;       ///< Переменные для подстановки
+
+public:
+    /**
+     * @brief Конструктор
+     */
+    AdapterCodeGenerator() = default;
+
+    /**
+     * @brief Деструктор
+     */
+    ~AdapterCodeGenerator() override = default;
+
+    /**
+     * @brief Генерирует код адаптера для интерфейса
+     * @param interface Информация об интерфейсе
+     * @return Сгенерированный код адаптера
+     * @throws std::runtime_error если генерация не удалась
+     */
+    std::string generateAdapter(const InterfaceInfo& interface) override;
+
+    /**
+     * @brief Генерирует код регистрации адаптеров в IoC контейнере
+     * @param interfaces Список интерфейсов для регистрации
+     * @return Сгенерированный код функции регистрации
+     */
+    std::string generateRegistrationCode(const std::vector<InterfaceInfo>& interfaces) override;
+
+private:
+    /**
+     * @brief Строит полное имя интерфейса с namespace
+     * @param interface Информация об интерфейсе
+     * @return Полное имя интерфейса
+     */
+    std::string buildFullName(const InterfaceInfo& interface);
+
+    /**
+     * @brief Генерирует код метода на основе его типа
+     * @param interface Информация об интерфейсе
+     * @param method Информация о методе
+     * @return Сгенерированный код метода
+     */
+    std::string generateMethod(const InterfaceInfo& interface, const MethodInfo& method);
+
+    /**
+     * @brief Генерирует универсальный метод для IoC
+     * @param interface Информация об интерфейсе
+     * @param method Информация о методе
+     * @return Сгенерированный код метода
+     */
+    std::string generateIoCMethod(const InterfaceInfo &, const MethodInfo &method);
+
+    /**
+     * @brief Генерирует геттер метод
+     * @param interface Информация об интерфейсе
+     * @param method Информация о методе
+     * @return Сгенерированный код геттера
+     */
+    std::string generateGetter(const InterfaceInfo& interface, const MethodInfo& method);
+
+    /**
+     * @brief Генерирует сеттер метод
+     * @param interface Информация об интерфейсе
+     * @param method Информация о методе
+     * @return Сгенерированный код сеттера
+     */
+    std::string generateSetter(const InterfaceInfo& interface, const MethodInfo& method);
+
+    /**
+     * @brief Генерирует void метод
+     * @param interface Информация об интерфейсе
+     * @param method Информация о методе
+     * @return Сгенерированный код void метода
+     */
+    std::string generateVoidMethod(const InterfaceInfo& interface, const MethodInfo& method);
+
+    /**
+     * @brief Генерирует метод с кастомной реализацией
+     * @param interface Информация об интерфейсе
+     * @param method Информация о методе
+     * @return Сгенерированный код кастомного метода
+     */
+    std::string generateCustomMethod(const InterfaceInfo& interface, const MethodInfo& method);
+
+    /**
+     * @brief Извлекает тип параметра из строки параметра
+     * @param param Строка параметра
+     * @return Тип параметра
+     */
+    std::string extractParamType(const std::string& param);
+
+    /**
+     * @brief Выполняет подстановку переменных в шаблон
+     * @param templateStr Строка шаблона
+     * @param vars Переменные для подстановки
+     * @return Результат подстановки
+     */
+    std::string renderTemplate(const std::string& templateStr,
+                             const std::map<std::string, std::string>& vars);
+
+    /**
+     * @brief Генерирует include директивы для интерфейсов
+     * @param interfaces Список интерфейсов
+     * @return Строка с include директивами
+     */
+    std::string generateIncludes(const std::vector<InterfaceInfo>& interfaces);
+};
+===== adapter-generator/include/interfaces/ICodeGenerator.hpp ====
+/**
+ * @file ICodeGenerator.hpp
+ * @brief Интерфейс генератора кода адаптеров
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#pragma once
+
+#include <string>
+#include "../models/InterfaceInfo.hpp"
+
+/**
+ * @brief Интерфейс для генерации кода адаптеров
+ * 
+ * Определяет контракт для генераторов, которые создают код адаптеров
+ * на основе информации об интерфейсах.
+ */
+class ICodeGenerator {
+public:
+    /**
+     * @brief Виртуальный деструктор
+     */
+    virtual ~ICodeGenerator() = default;
+
+    /**
+     * @brief Генерирует код адаптера для интерфейса
+     * @param interface Информация об интерфейсе
+     * @return Сгенерированный код адаптера
+     * @throws std::runtime_error если генерация не удалась
+     */
+    virtual std::string generateAdapter(const InterfaceInfo& interface) = 0;
+
+    /**
+     * @brief Генерирует код регистрации адаптеров в IoC контейнере
+     * @param interfaces Список интерфейсов для регистрации
+     * @return Сгенерированный код функции регистрации
+     */
+    virtual std::string generateRegistrationCode(const std::vector<InterfaceInfo>& interfaces) = 0;
+};
+===== adapter-generator/include/interfaces/IInterfaceParser.hpp ====
+/**
+ * @file IInterfaceParser.hpp
+ * @brief Интерфейс парсера C++ интерфейсов
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#pragma once
+
+#include <vector>
+#include <string>
+#include "../models/InterfaceInfo.hpp"
+
+/**
+ * @brief Интерфейс для парсинга C++ файлов и извлечения информации об интерфейсах
+ * 
+ * Определяет контракт для различных типов парсеров, которые могут анализировать
+ * исходный код C++ и извлекать информацию о чисто виртуальных классах (интерфейсах).
+ */
+class IInterfaceParser {
+public:
+    /**
+     * @brief Виртуальный деструктор
+     */
+    virtual ~IInterfaceParser() = default;
+
+    /**
+     * @brief Парсит файл и извлекает информацию об интерфейсах
+     * @param filePath Путь к файлу для парсинга
+     * @return Вектор структур InterfaceInfo с информацией об найденных интерфейсах
+     * @throws std::runtime_error если файл не удается прочитать или парсинг не удался
+     */
+    virtual std::vector<InterfaceInfo> parseFile(const std::string& filePath) = 0;
+
+    /**
+     * @brief Парсит содержимое строки и извлекает информацию об интерфейсах
+     * @param content Содержимое для парсинга
+     * @return Вектор структур InterfaceInfo с информацией об найденных интерфейсах
+     * @throws std::runtime_error если парсинг не удался
+     */
+    virtual std::vector<InterfaceInfo> parseContent(const std::string& content) = 0;
+};
+===== adapter-generator/include/models/CustomImplementation.hpp ====
+/**
+ * @file CustomImplementation.hpp
+ * @brief Структура для хранения информации о кастомной реализации метода
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#pragma once
+
+#include <string>
+
+/**
+ * @brief Структура для хранения информации о кастомной реализации метода
+ * 
+ * Используется когда метод адаптера требует сложной логики,
+ * которая не может быть выражена простым геттером/сеттером.
+ */
+struct CustomImplementation {
+    bool hasCustom = false;         ///< Флаг наличия кастомной реализации
+    std::string className;          ///< Имя класса с кастомной реализацией
+    std::string methodName;         ///< Имя метода кастомной реализации
+    std::string fullReference;     ///< Полная ссылка (ClassName::methodName)
+
+    /**
+     * @brief Проверяет, корректно ли заполнена информация о кастомной реализации
+     * @return true если все необходимые поля заполнены
+     */
+    bool isValid() const;
+
+    /**
+     * @brief Парсит строку аннотации и заполняет структуру
+     * @param annotation Строка аннотации типа "ClassName::methodName"
+     * @return true если парсинг успешен
+     */
+    bool parseFromAnnotation(const std::string& annotation);
+
+    /**
+     * @brief Возвращает полную ссылку на кастомную реализацию
+     * @return Строка вида "ClassName::methodName"
+     */
+    std::string getFullReference() const;
+};
+===== adapter-generator/include/models/InterfaceInfo.hpp ====
+/**
+ * @file InterfaceInfo.hpp
+ * @brief Структура для хранения информации об интерфейсе
+ * @author Adapter Generator Team
+ * @version 1.0
+ */
+
+#pragma once
+
+#include <string>
+#include <vector>
+#include "MethodInfo.hpp"
+
+/**
+ * @brief Структура для хранения информации об интерфейсе
+ * 
+ * Содержит информацию о C++ интерфейсе (чисто виртуальном классе):
+ * имя, пространство имен и список методов.
+ */
+struct InterfaceInfo {
+    std::string namespaceName;      ///< Имя пространства имен
+    std::string className;          ///< Имя класса интерфейса
+    std::vector<MethodInfo> methods; ///< Список методов интерфейса
+    std::string sourceFile;         ///< Исходный файл, где определен интерфейс
+
+    /**
+     * @brief Получить полное имя интерфейса с пространством имен
+     * @return Полное имя (например, "MyNamespace::IMovable")
+     */
+    std::string getFullName() const;
+
+    /**
+     * @brief Получить имя адаптера на основе имени интерфейса
+     * @return Имя адаптера (для IMovable возвращает "MovableAdapter")
+     */
+    std::string getAdapterName() const;
+
+    /**
+     * @brief Проверить, является ли класс корректным интерфейсом
+     * @return true если класс содержит только чисто виртуальные методы
+     */
+    bool isValidInterface() const;
+
+    /**
+     * @brief Получить список необходимых include файлов
+     * @return Вектор строк с именами файлов для включения
+     */
+    std::vector<std::string> getRequiredIncludes() const;
+};
+===== adapter-generator/include/models/MethodInfo.hpp ====
+/**
+ * @file MethodInfo.hpp
+ * @brief Структура для хранения информации о методе интерфейса
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#pragma once
+
+#include <string>
+#include <vector>
+#include "CustomImplementation.hpp"
+
+/**
+ * @brief Структура для хранения информации о методе интерфейса
+ * 
+ * Содержит всю необходимую информацию для генерации адаптера:
+ * тип возврата, имя метода, параметры, модификаторы и кастомную реализацию.
+ */
+struct MethodInfo {
+    std::string returnType;          ///< Тип возвращаемого значения
+    std::string name;               ///< Имя метода
+    std::vector<std::string> parameters; ///< Список параметров метода
+    bool isConst = false;           ///< Является ли метод константным
+    bool isPureVirtual = false;     ///< Является ли метод чисто виртуальным
+    CustomImplementation customImpl; ///< Информация о кастомной реализации
+
+    /**
+     * @brief Проверяет, является ли метод геттером
+     * @return true если метод начинается с "get"
+     */
+    bool isGetter() const;
+
+    /**
+     * @brief Проверяет, является ли метод сеттером
+     * @return true если метод начинается с "set" и имеет ровно один параметр
+     */
+    bool isSetter() const;
+
+    /**
+     * @brief Проверяет, является ли метод void методом без параметров
+     * @return true если метод возвращает void и не имеет параметров
+     */
+    bool isVoidMethod() const;
+
+    /**
+     * @brief Извлекает имя свойства из имени метода
+     * @return Имя свойства (для getPosition возвращает "Position")
+     */
+    std::string getPropertyName() const;
+
+    /**
+     * @brief Проверяет, имеет ли метод кастомную реализацию
+     * @return true если указана кастомная реализация
+     */
+    bool hasCustomImplementation() const;
+};
+===== adapter-generator/include/parsers/SimpleInterfaceParser.hpp ====
+/**
+ * @file SimpleInterfaceParser.hpp
+ * @brief Простая реализация парсера C++ интерфейсов
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#pragma once
+
+#include "../interfaces/IInterfaceParser.hpp"
+#include <regex>
+#include <map>
+
+/**
+ * @brief Простая реализация парсера C++ интерфейсов на основе регулярных выражений
+ * 
+ * Использует регулярные выражения для поиска классов с чисто виртуальными методами.
+ * Поддерживает парсинг аннотаций для кастомных реализаций методов.
+ * 
+ * @note Для продакшн использования рекомендуется использовать более мощные инструменты
+ *       такие как libclang или clang-ast-matchers
+ */
+class SimpleInterfaceParser : public IInterfaceParser {
+private:
+    std::regex classRegex_;         ///< Регулярное выражение для поиска классов
+    std::regex methodRegex_;        ///< Регулярное выражение для поиска методов
+    std::regex namespaceRegex_;     ///< Регулярное выражение для поиска namespace
+    std::regex customImplRegex_;    ///< Регулярное выражение для поиска аннотаций
+
+public:
+    /**
+     * @brief Конструктор, инициализирует регулярные выражения
+     */
+    SimpleInterfaceParser();
+
+    /**
+     * @brief Деструктор
+     */
+    ~SimpleInterfaceParser() override = default;
+
+    /**
+     * @brief Парсит файл и извлекает информацию об интерфейсах
+     * @param filePath Путь к файлу для парсинга
+     * @return Вектор структур InterfaceInfo с информацией об найденных интерфейсах
+     * @throws std::runtime_error если файл не удается прочитать
+     */
+    std::vector<InterfaceInfo> parseFile(const std::string& filePath) override;
+
+    /**
+     * @brief Парсит содержимое строки и извлекает информацию об интерфейсах
+     * @param content Содержимое для парсинга
+     * @return Вектор структур InterfaceInfo с информацией об найденных интерфейсах
+     */
+    std::vector<InterfaceInfo> parseContent(const std::string& content) override;
+
+private:
+    /**
+     * @brief Парсит методы внутри класса
+     * @param classContent Содержимое класса между фигурными скобками
+     * @param interfaceName Имя интерфейса для формирования ключей IoC
+     * @return Вектор информации о методах
+     */
+    std::vector<MethodInfo> parseMethods(const std::string& classContent, 
+                                       const std::string& interfaceName);
+
+    /**
+     * @brief Парсит параметры метода
+     * @param paramStr Строка с параметрами метода
+     * @return Вектор строк с параметрами
+     */
+    std::vector<std::string> parseParameters(const std::string& paramStr);
+
+    /**
+     * @brief Проверяет, что все методы класса являются чисто виртуальными
+     * @param methods Вектор методов для проверки
+     * @return true если все методы чисто виртуальные
+     */
+    bool hasOnlyPureVirtual(const std::vector<MethodInfo>& methods);
+
+    /**
+     * @brief Извлекает имя namespace из содержимого файла
+     * @param content Содержимое файла
+     * @param pos Позиция, до которой искать namespace
+     * @return Имя namespace или пустая строка
+     */
+    std::string extractNamespace(const std::string& content, size_t pos);
+
+    /**
+     * @brief Находит соответствующую закрывающую скобку
+     * @param content Содержимое для поиска
+     * @param start Позиция открывающей скобки
+     * @return Позиция закрывающей скобки
+     */
+    size_t findMatchingBrace(const std::string& content, size_t start);
+
+    /**
+     * @brief Парсит аннотацию кастомной реализации из комментария
+     * @param commentContent Содержимое комментария
+     * @return Структура CustomImplementation
+     */
+    CustomImplementation parseCustomImplementation(const std::string& commentContent);
+
+    /**
+     * @brief Извлекает комментарии перед методом
+     * @param content Содержимое класса
+     * @param methodPos Позиция метода
+     * @return Текст комментариев
+     */
+    std::string extractMethodComments(const std::string& content, size_t methodPos);
+
+    /**
+     * @brief Удаляет лишние пробелы из строки
+     * @param str Строка для обработки
+     * @return Обработанная строка
+     */
+    std::string trim(const std::string& str);
+};
+===== adapter-generator/include/utils/FileUtils.hpp ====
+/**
+ * @file FileUtils.hpp
+ * @brief Утилиты для работы с файлами
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#pragma once
+
+#include <string>
+#include <vector>
+
+/**
+ * @brief Класс с утилитарными функциями для работы с файлами
+ */
+class FileUtils {
+public:
+    /**
+     * @brief Читает содержимое файла в строку
+     * @param filePath Путь к файлу
+     * @return Содержимое файла
+     * @throws std::runtime_error если файл не удается прочитать
+     */
+    static std::string readFile(const std::string& filePath);
+
+    /**
+     * @brief Записывает строку в файл
+     * @param filePath Путь к файлу
+     * @param content Содержимое для записи
+     * @throws std::runtime_error если файл не удается записать
+     */
+    static void writeFile(const std::string& filePath, const std::string& content);
+
+    /**
+     * @brief Находит все файлы с заданным расширением в директории
+     * @param directory Путь к директории
+     * @param extension Расширение файлов (например, ".hpp")
+     * @param recursive Рекурсивный поиск в поддиректориях
+     * @return Вектор путей к найденным файлам
+     */
+    static std::vector<std::string> findFilesWithExtension(
+        const std::string& directory,
+        const std::string& extension,
+        bool recursive = true);
+
+    /**
+     * @brief Проверяет существование файла
+     * @param filePath Путь к файлу
+     * @return true если файл существует
+     */
+    static bool fileExists(const std::string& filePath);
+
+    /**
+     * @brief Создает директории в пути если они не существуют
+     * @param dirPath Путь к директории
+     */
+    static void createDirectories(const std::string& dirPath);
+
+    /**
+     * @brief Извлекает имя файла из полного пути
+     * @param filePath Полный путь к файлу
+     * @return Имя файла
+     */
+    static std::string getFileName(const std::string& filePath);
+
+    /**
+     * @brief Извлекает расширение файла
+     * @param filePath Путь к файлу
+     * @return Расширение файла (включая точку)
+     */
+    static std::string getFileExtension(const std::string& filePath);
+};
+===== adapter-generator/include/utils/StringUtils.hpp ====
+/**
+ * @file StringUtils.hpp
+ * @brief Утилиты для работы со строками
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#pragma once
+
+#include <string>
+#include <vector>
+
+/**
+ * @brief Класс с утилитарными функциями для работы со строками
+ */
+class StringUtils {
+public:
+    /**
+     * @brief Удаляет пробелы в начале и конце строки
+     * @param str Строка для обработки
+     * @return Обработанная строка
+     */
+    static std::string trim(const std::string& str);
+
+    /**
+     * FIXME: deprecated method, delete after refactoring
+     * @brief Разделяет строку по разделителю
+     * @param str Строка для разделения
+     * @param delimiter Разделитель
+     * @return Вектор подстрок
+     */
+    static std::vector<std::string> split(const std::string& str, char delimiter);
+
+    /**
+     * @brief Разделяет строку по разделителю
+     * @param str Строка для разделения
+     * @param delimiter Разделитель
+     * @return Вектор подстрок
+     */
+    static std::vector<std::string> split(const std::string &str, const std::string &delimiter);
+
+    /**
+     * @brief Заменяет все вхождения подстроки в строке
+     * @param str Исходная строка
+     * @param from Заменяемая подстрока
+     * @param to Заменяющая подстрока
+     * @return Строка с выполненными заменами
+     */
+    static std::string replaceAll(const std::string& str, 
+                                 const std::string& from, 
+                                 const std::string& to);
+
+    /**
+     * @brief Проверяет, начинается ли строка с префикса
+     * @param str Проверяемая строка
+     * @param prefix Префикс
+     * @return true если строка начинается с префикса
+     */
+    static bool startsWith(const std::string& str, const std::string& prefix);
+
+    /**
+     * @brief Проверяет, заканчивается ли строка суффиксом
+     * @param str Проверяемая строка
+     * @param suffix Суффикс
+     * @return true если строка заканчивается суффиксом
+     */
+    static bool endsWith(const std::string& str, const std::string& suffix);
+
+    /**
+     * @brief Преобразует первую букву в верхний регистр
+     * @param str Строка для преобразования
+     * @return Строка с заглавной первой буквой
+     */
+    static std::string capitalize(const std::string& str);
+
+    /**
+     * @brief Преобразует строку в snake_case
+     * @param camelCase Строка в camelCase
+     * @return Строка в snake_case
+     */
+    static std::string toSnakeCase(const std::string& camelCase);
+};
+===== adapter-generator/main.cpp ====
+/**
+ * @file main.cpp
+ * @brief Основное приложение генератора адаптеров
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+#include <string>
+#include <iostream>
+#include <memory>
+#include <vector>
+
+#include "include/parsers/SimpleInterfaceParser.hpp"
+#include "include/generators/AdapterCodeGenerator.hpp"
+#include "include/utils/FileUtils.hpp"
+#include <set>
+
+/**
+ * @brief Основной класс генератора адаптеров
+ * 
+ * Координирует работу парсера и генератора для создания
+ * адаптеров интерфейсов C++.
+ */
+class AdapterGenerator {
+private:
+    std::unique_ptr<IInterfaceParser> parser_;     ///< Парсер интерфейсов
+    std::unique_ptr<ICodeGenerator> generator_;    ///< Генератор кода
+
+public:
+    /**
+     * @brief Конструктор
+     */
+    AdapterGenerator() 
+        : parser_(std::make_unique<SimpleInterfaceParser>()),
+          generator_(std::make_unique<AdapterCodeGenerator>()) {
+    }
+
+    /**
+     * @brief Генерирует адаптеры для всех интерфейсов в директории
+     * @param inputDir Директория с заголовочными файлами
+     * @param outputDir Директория для сохранения сгенерированных файлов
+     * @param generateSeparateFiles Генерировать отдельные файлы для каждого адаптера
+     */
+    void generateAdapters(const std::string& inputDir, 
+                         const std::string& outputDir,
+                         bool generateSeparateFiles = true) {
+        
+        std::cout << "Scanning directory: " << inputDir << std::endl;
+
+        // Находим все заголовочные файлы
+        auto hppFiles = FileUtils::findFilesWithExtension(inputDir, ".hpp", true);
+        auto hFiles = FileUtils::findFilesWithExtension(inputDir, ".h", true);
+        
+        // Объединяем списки файлов
+        hppFiles.insert(hppFiles.end(), hFiles.begin(), hFiles.end());
+
+        std::cout << "Found " << hppFiles.size() << " header files" << std::endl;
+
+        // Парсим все файлы и собираем интерфейсы
+        std::vector<InterfaceInfo> allInterfaces;
+        int filesParsed = 0;
+        
+        for (const auto& file : hppFiles) {
+            try {
+                std::cout << "Parsing: " << file << std::endl;
+                auto interfaces = parser_->parseFile(file);
+                allInterfaces.insert(allInterfaces.end(), 
+                                   interfaces.begin(), interfaces.end());
+                filesParsed++;
+            } catch (const std::exception& e) {
+                std::cerr << "Warning: Failed to parse " << file 
+                          << ": " << e.what() << std::endl;
+            }
+        }
+
+        std::cout << "Parsed " << filesParsed << " files successfully" << std::endl;
+        std::cout << "Found " << allInterfaces.size() << " interfaces" << std::endl;
+
+        if (allInterfaces.empty()) {
+            std::cout << "No interfaces found. Nothing to generate." << std::endl;
+            return;
+        }
+
+        // Создаем выходную директорию
+        FileUtils::createDirectories(outputDir);
+
+        if (generateSeparateFiles) {
+            // Генерируем отдельные файлы для каждого адаптера
+            generateSeparateAdapterFiles(allInterfaces, outputDir);
+        } else {
+            // Генерируем один общий файл
+            generateSingleFile(allInterfaces, outputDir);
+        }
+
+        // Генерируем файл регистрации
+        generateRegistrationFile(allInterfaces, outputDir);
+
+        std::cout << "Generation completed successfully!" << std::endl;
+    }
+
+private:
+    /**
+     * @brief Генерирует отдельные файлы для каждого адаптера
+     * @param interfaces Список интерфейсов
+     * @param outputDir Выходная директория
+     */
+    void generateSeparateAdapterFiles(const std::vector<InterfaceInfo>& interfaces,
+                                     const std::string& outputDir) {
+        
+        for (const auto& interface : interfaces) {
+            std::string adapterCode = generator_->generateAdapter(interface);
+            std::string fileName = interface.getAdapterName() + ".hpp";
+            std::string filePath = outputDir + "/" + fileName;
+            
+            // Добавляем заголовок файла
+            std::string fileHeader = "// Auto-generated adapter code\n"
+                                   "// DO NOT EDIT MANUALLY\n"
+                                   "// Generated for interface: " + interface.getFullName() + "\n\n";
+            
+            FileUtils::writeFile(filePath, fileHeader + adapterCode);
+            std::cout << "Generated: " << fileName << std::endl;
+        }
+    }
+
+    /**
+     * @brief Генерирует один файл со всеми адаптерами
+     * @param interfaces Список интерфейсов
+     * @param outputDir Выходная директория
+     */
+    void generateSingleFile(const std::vector<InterfaceInfo>& interfaces,
+                           const std::string& outputDir) {
+        
+        std::string filePath = outputDir + "/GeneratedAdapters.hpp";
+        
+        std::ostringstream content;
+        content << "// Auto-generated adapter code\n";
+        content << "// DO NOT EDIT MANUALLY\n";
+        content << "// Contains " << interfaces.size() << " adapters\n\n";
+        
+        content << "#pragma once\n\n";
+        
+        // Добавляем все необходимые includes
+        std::set<std::string> allIncludes;
+        for (const auto& interface : interfaces) {
+            auto includes = interface.getRequiredIncludes();
+            allIncludes.insert(includes.begin(), includes.end());
+        }
+        
+        for (const auto& include : allIncludes) {
+            content << "#include \"" << include << "\"\n";
+        }
+        content << "\n";
+
+        // Генерируем все адаптеры
+        for (const auto& interface : interfaces) {
+            content << "// ==================== " << interface.className 
+                    << " Adapter ====================\n";
+            content << generator_->generateAdapter(interface) << "\n\n";
+        }
+
+        FileUtils::writeFile(filePath, content.str());
+        std::cout << "Generated: GeneratedAdapters.hpp" << std::endl;
+    }
+
+    /**
+     * @brief Генерирует файл регистрации адаптеров
+     * @param interfaces Список интерфейсов
+     * @param outputDir Выходная директория
+     */
+    void generateRegistrationFile(const std::vector<InterfaceInfo>& interfaces,
+                                 const std::string& outputDir) {
+        
+        std::string registrationCode = generator_->generateRegistrationCode(interfaces);
+        std::string filePath = outputDir + "/AdapterRegistry.hpp";
+        
+        std::string fileHeader = "// Auto-generated adapter registration\n"
+                               "// DO NOT EDIT MANUALLY\n\n";
+        
+        FileUtils::writeFile(filePath, fileHeader + registrationCode);
+        std::cout << "Generated: AdapterRegistry.hpp" << std::endl;
+    }
+};
+
+/**
+ * @brief Выводит справку по использованию программы
+ * @param programName Имя программы
+ */
+void printUsage(const char* programName) {
+    std::cout << "Usage: " << programName << " [options] <input_directory> <output_directory>\n";
+    std::cout << "\nOptions:\n";
+    std::cout << "  -h, --help              Show this help message\n";
+    std::cout << "  -s, --single-file       Generate single file with all adapters\n";
+    std::cout << "  -m, --separate-files    Generate separate files for each adapter (default)\n";
+    std::cout << "\nArguments:\n";
+    std::cout << "  input_directory         Directory to search for interface files\n";
+    std::cout << "  output_directory        Directory to save generated adapters\n";
+    std::cout << "\nExample:\n";
+    std::cout << "  " << programName << " ./include ./generated\n";
+    std::cout << "  " << programName << " -s ./src/interfaces ./output\n";
+}
+
+/**
+ * @brief Главная функция программы
+ * @param argc Количество аргументов
+ * @param argv Массив аргументов
+ * @return Код возврата
+ */
+int main(int argc, char* argv[]) {
+    std::cout << "=== C++ Interface Adapter Generator ===" << std::endl;
+    std::cout << "Version 1.0" << std::endl << std::endl;
+
+    // Парсинг аргументов командной строки
+    bool generateSeparateFiles = true;
+    std::string inputDir, outputDir;
+    
+    int argIndex = 1;
+    while (argIndex < argc) {
+        std::string arg = argv[argIndex];
+        
+        if (arg == "-h" || arg == "--help") {
+            printUsage(argv[0]);
+            return 0;
+        } else if (arg == "-s" || arg == "--single-file") {
+            generateSeparateFiles = false;
+        } else if (arg == "-m" || arg == "--separate-files") {
+            generateSeparateFiles = true;
+        } else if (inputDir.empty()) {
+            inputDir = arg;
+        } else if (outputDir.empty()) {
+            outputDir = arg;
+        } else {
+            std::cerr << "Error: Too many arguments" << std::endl;
+            printUsage(argv[0]);
+            return 1;
+        }
+        
+        argIndex++;
+    }
+
+    // Проверка обязательных аргументов
+    if (inputDir.empty() || outputDir.empty()) {
+        std::cerr << "Error: Input and output directories are required" << std::endl;
+        printUsage(argv[0]);
+        return 1;
+    }
+
+    // Проверка существования входной директории
+    if (!FileUtils::fileExists(inputDir)) {
+        std::cerr << "Error: Input directory does not exist: " << inputDir << std::endl;
+        return 1;
+    }
+
+    try {
+        AdapterGenerator generator;
+        generator.generateAdapters(inputDir, outputDir, generateSeparateFiles);
+        return 0;
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+}
+===== adapter-generator/src/generators/AdapterCodeGenerator.cpp ====
+/**
+ * @file AdapterCodeGenerator.cpp
+ * @brief Реализация генератора кода адаптеров
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#include "../../include/generators/AdapterCodeGenerator.hpp"
+#include "../../include/utils/StringUtils.hpp"
+#include <sstream>
+#include <algorithm>
+#include <set>
+#include <iostream>
+
+// Определение статических шаблонов
+const std::string AdapterCodeGenerator::ADAPTER_TEMPLATE = R"(
+/**
+ * @file {ADAPTER_NAME}.hpp
+ * @brief Auto-generated adapter for {INTERFACE_NAME}
+ */
+
+#pragma once
+
+{INCLUDES}
+
+/**
+ * @brief Auto-generated adapter class for {INTERFACE_NAME}
+ * 
+ * This adapter implements the Adapter pattern to allow universal game objects
+ * to be used through the {INTERFACE_NAME} interface using IoC container.
+ */
+class {ADAPTER_NAME} : public {FULL_INTERFACE_NAME} {
+private:
+    std::shared_ptr<IGameObject> m_gameObject; ///< Adapted game object
+
+public:
+    /**
+     * @brief Constructor
+     * @param gameObject Game object to adapt
+     * @throws std::invalid_argument if gameObject is nullptr
+     */
+    explicit {ADAPTER_NAME}(std::shared_ptr<IGameObject> gameObject)
+        : m_gameObject(gameObject) {
+        if (!gameObject) {
+            throw std::invalid_argument("Game object cannot be null");
+        }
+    }
+
+    /**
+     * @brief Destructor
+     */
+    ~{ADAPTER_NAME}() override = default;
+
+{METHODS}
+};
+)";
+
+const std::string AdapterCodeGenerator::GETTER_METHOD_TEMPLATE = R"(
+    /**
+     * @brief Get {PROPERTY_NAME} property
+     * @return Value from IoC container
+     */
+    {RETURN_TYPE} {METHOD_NAME}(){CONST_QUALIFIER} override {
+        try {
+            return IoC::resolve<{RETURN_TYPE}>("{FULL_INTERFACE_NAME}:{PROPERTY_NAME}.get", m_gameObject);
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot get {PROPERTY_NAME}: " + std::string(e.what()));
+        }
+    }
+)";
+
+const std::string AdapterCodeGenerator::SETTER_METHOD_TEMPLATE = R"(
+    /**
+     * @brief Set {PROPERTY_NAME} property
+     * @param value New value to set
+     */
+    void {METHOD_NAME}({PARAM_TYPE} value) override {
+        try {
+            auto command = IoC::resolve<ICommand>("{FULL_INTERFACE_NAME}:{PROPERTY_NAME}.set", 
+                                                 m_gameObject, std::make_shared<{PARAM_TYPE_CLEAN}>(value));
+            command->execute();
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot set {PROPERTY_NAME}: " + std::string(e.what()));
+        }
+    }
+)";
+
+const std::string AdapterCodeGenerator::VOID_METHOD_TEMPLATE = R"(
+    /**
+     * @brief Execute {METHOD_NAME} operation
+     */
+    void {METHOD_NAME}() override {
+        try {
+            auto command = IoC::resolve<ICommand>("{FULL_INTERFACE_NAME}:{METHOD_KEY}", m_gameObject);
+            command->execute();
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot execute {METHOD_NAME}: " + std::string(e.what()));
+        }
+    }
+)";
+
+const std::string AdapterCodeGenerator::CUSTOM_METHOD_TEMPLATE = R"(
+    /**
+     * @brief {METHOD_NAME} with custom implementation
+     * @note Uses custom implementation: {CUSTOM_REFERENCE}
+     */
+    {RETURN_TYPE} {METHOD_NAME}({PARAMETERS}){CONST_QUALIFIER} override {
+        try {
+            return {CUSTOM_REFERENCE}(m_gameObject{PARAMETER_PASS});
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot execute custom {METHOD_NAME}: " + std::string(e.what()));
+        }
+    }
+)";
+
+const std::string AdapterCodeGenerator::REGISTRATION_TEMPLATE = R"(
+/**
+ * @file AdapterRegistry.hpp
+ * @brief Auto-generated adapter registration
+ */
+
+#pragma once
+
+{INCLUDES}
+
+namespace AutoGenerated {
+
+/**
+ * @brief Registry class for all auto-generated adapters
+ */
+class AdapterRegistry {
+public:
+    /**
+     * @brief Register all adapters in IoC container
+     */
+    static void registerAll() {
+{REGISTRATIONS}
+    }
+
+private:
+    /**
+     * @brief Register single adapter type
+     * @tparam TInterface Interface type
+     * @tparam TAdapter Adapter type
+     * @param adapterKey Key for adapter factory registration
+     * @param interfaceType Type info for interface
+     */
+    template<typename TInterface, typename TAdapter>
+    static void registerAdapter(const std::string& adapterKey, const std::type_info& interfaceType) {
+        // Создаем фабрику, которая принимает IGameObject и создает адаптер
+        auto factory = std::make_shared<std::function<std::shared_ptr<TInterface>(std::shared_ptr<IGameObject>)>>(
+            [](std::shared_ptr<IGameObject> obj) -> std::shared_ptr<TInterface> {
+                return std::make_shared<TAdapter>(obj);
+            }
+        );
+        
+        // Регистрируем фабрику в IoC контейнере
+        auto keyPtr = std::make_shared<std::string>(adapterKey);
+        auto typePtr = std::make_shared<std::type_info>(interfaceType);
+        
+        std::vector<std::shared_ptr<void>> args = {keyPtr, typePtr, factory};
+        
+        auto registerCommand = IoC::resolve<ICommand>("IoC.Register", args);
+        registerCommand->execute();
+    }
+};
+
+} // namespace AutoGenerated
+)";
+
+std::string AdapterCodeGenerator::generateAdapter(const InterfaceInfo& interface) {
+    variables_.clear();
+
+    // Устанавливаем основные переменные
+    variables_["INTERFACE_NAME"] = interface.className;
+    variables_["FULL_INTERFACE_NAME"] = buildFullName(interface);
+    variables_["ADAPTER_NAME"] = interface.getAdapterName();
+
+    // Генерируем includes
+    std::ostringstream includes;
+    for (const auto& include : interface.getRequiredIncludes()) {
+        includes << "#include \"" << include << "\"\n";
+    }
+    variables_["INCLUDES"] = includes.str();
+
+    // Генерируем методы
+    std::ostringstream methods;
+    for (const auto& method : interface.methods) {
+        methods << generateMethod(interface, method);
+    }
+    variables_["METHODS"] = methods.str();
+
+    return renderTemplate(ADAPTER_TEMPLATE, variables_);
+}
+
+std::string AdapterCodeGenerator::generateRegistrationCode(
+    const std::vector<InterfaceInfo>& interfaces) {
+    
+    std::map<std::string, std::string> vars;
+
+    // Генерируем includes
+    vars["INCLUDES"] = generateIncludes(interfaces);
+
+    // Генерируем регистрации
+    std::ostringstream registrations;
+    for (const auto& interface : interfaces) {
+        registrations << "        // Register " << interface.className << " adapter\n";
+        registrations << "        registerAdapter<" << interface.getFullName() 
+                     << ", " << interface.getAdapterName() 
+                     << ">(\"Adapter:" << interface.getFullName() << "\", typeid(" << interface.getFullName() << "));\n\n";
+    }
+    vars["REGISTRATIONS"] = registrations.str();
+
+    return renderTemplate(REGISTRATION_TEMPLATE, vars);
+}
+
+std::string AdapterCodeGenerator::buildFullName(const InterfaceInfo& interface) {
+    return interface.getFullName();
+}
+
+std::string AdapterCodeGenerator::generateMethod(
+    const InterfaceInfo& interface, 
+    const MethodInfo& method) {
+    
+    if (method.hasCustomImplementation()) {
+        return generateCustomMethod(interface, method);
+    } else if (method.isGetter()) {
+        return generateGetter(interface, method);
+    } else if (method.isSetter()) {
+        return generateSetter(interface, method);
+    } else if (method.isVoidMethod()) {
+        return generateVoidMethod(interface, method);
+    } else {
+        // Универсальная генерация IoC-метода
+        return generateIoCMethod(interface, method);
+    }
+}
+
+std::string AdapterCodeGenerator::generateIoCMethod(
+    const InterfaceInfo& interface,
+    const MethodInfo& method) {
+
+    std::map<std::string, std::string> vars = variables_;
+    vars["METHOD_NAME"] = method.name;
+    vars["CONST_QUALIFIER"] = method.isConst ? " const" : "";
+    vars["RETURN_TYPE"] = method.returnType;
+    vars["METHOD_KEY"] = method.name;
+
+    // Формируем параметры сигнатуры и передачи
+    std::ostringstream params;
+    std::ostringstream paramPass;
+    for (size_t i = 0; i < method.parameters.size(); ++i) {
+        if (i > 0) {
+            params << ", ";
+            paramPass << ", ";
+        }
+        params << method.parameters[i];
+        // Извлечь имя параметра
+        std::string p = method.parameters[i];
+        auto pos = p.find_last_of(' ');
+        paramPass << (pos == std::string::npos ? p : p.substr(pos + 1));
+    }
+    vars["PARAMETERS"] = params.str();
+    vars["PARAMETER_PASS"] = paramPass.str().empty() ? "" : ", " + paramPass.str();
+
+    // Выбрать шаблон: void или non-void
+    const std::string& tmpl = (method.returnType == "void")
+        ? R"(
+    /**
+     * @brief Execute {METHOD_NAME} operation
+     */
+    void {METHOD_NAME}({PARAMETERS}){CONST_QUALIFIER} override {
+        try {
+            auto command = IoC::resolve<ICommand>("{INTERFACE_NAME}:{METHOD_KEY}", m_gameObject{PARAMETER_PASS});
+            command->execute();
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot execute {METHOD_NAME}: " + std::string(e.what()));
+        }
+    }
+)"
+        : R"(
+    /**
+     * @brief Execute {METHOD_NAME} operation
+     * @return {RETURN_TYPE} from IoC container
+     */
+    {RETURN_TYPE} {METHOD_NAME}({PARAMETERS}){CONST_QUALIFIER} override {
+        try {
+            return IoC::resolve<{RETURN_TYPE}>("{INTERFACE_NAME}:{METHOD_KEY}", m_gameObject{PARAMETER_PASS});
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot execute {METHOD_NAME}: " + std::string(e.what()));
+        }
+    }
+)";
+
+    return renderTemplate(tmpl, vars);
+}
+
+std::string AdapterCodeGenerator::generateGetter(
+    const InterfaceInfo& interface, 
+    const MethodInfo& method) {
+    
+    std::map<std::string, std::string> vars = variables_;
+    vars["RETURN_TYPE"] = method.returnType;
+    vars["METHOD_NAME"] = method.name;
+    vars["PROPERTY_NAME"] = method.getPropertyName();
+    vars["CONST_QUALIFIER"] = method.isConst ? " const" : "";
+
+    return renderTemplate(GETTER_METHOD_TEMPLATE, vars);
+}
+
+std::string AdapterCodeGenerator::generateSetter(
+    const InterfaceInfo& interface, const MethodInfo& method) {
+    
+    std::map<std::string, std::string> vars = variables_;
+    vars["METHOD_NAME"] = method.name;
+    vars["PARAM_TYPE"] = extractParamType(method.parameters[0]);
+    vars["PARAM_TYPE_CLEAN"] = StringUtils::replaceAll(vars["PARAM_TYPE"], "const ", "");
+    vars["PARAM_TYPE_CLEAN"] = StringUtils::replaceAll(vars["PARAM_TYPE_CLEAN"], "&", "");
+    vars["PARAM_TYPE_CLEAN"] = StringUtils::trim(vars["PARAM_TYPE_CLEAN"]);
+    vars["PROPERTY_NAME"] = method.getPropertyName();
+
+    return renderTemplate(SETTER_METHOD_TEMPLATE, vars);
+}
+
+std::string AdapterCodeGenerator::generateVoidMethod(
+    const InterfaceInfo& interface, 
+    const MethodInfo& method) {
+    
+    std::map<std::string, std::string> vars = variables_;
+    vars["METHOD_NAME"] = method.name;
+    vars["METHOD_KEY"] = method.name;
+
+    return renderTemplate(VOID_METHOD_TEMPLATE, vars);
+}
+
+std::string AdapterCodeGenerator::generateCustomMethod(
+    const InterfaceInfo& interface, 
+    const MethodInfo& method) {
+    
+    std::map<std::string, std::string> vars = variables_;
+    vars["METHOD_NAME"] = method.name;
+    vars["RETURN_TYPE"] = method.returnType;
+    vars["CUSTOM_REFERENCE"] = method.customImpl.getFullReference();
+    vars["CONST_QUALIFIER"] = method.isConst ? " const" : "";
+
+    // Генерируем параметры
+    std::ostringstream params;
+    std::ostringstream paramPass;
+    
+    for (size_t i = 0; i < method.parameters.size(); ++i) {
+        if (i > 0) {
+            params << ", ";
+            paramPass << ", ";
+        }
+        params << method.parameters[i];
+        
+        // Извлекаем имя параметра из объявления
+        std::string paramName = method.parameters[i];
+        size_t lastSpace = paramName.find_last_of(' ');
+        if (lastSpace != std::string::npos) {
+            paramName = paramName.substr(lastSpace + 1);
+        }
+        paramPass << paramName;
+    }
+    
+    vars["PARAMETERS"] = params.str();
+    vars["PARAMETER_PASS"] = paramPass.str().empty() ? "" : ", " + paramPass.str();
+
+    return renderTemplate(CUSTOM_METHOD_TEMPLATE, vars);
+}
+
+std::string AdapterCodeGenerator::extractParamType(const std::string& param) {
+    // Ищем последний пробел - после него должно быть имя параметра
+    size_t lastSpace = param.find_last_of(' ');
+    if (lastSpace != std::string::npos) {
+        return StringUtils::trim(param.substr(0, lastSpace));
+    }
+    return param; // Если пробела нет, возвращаем весь параметр
+}
+
+std::string AdapterCodeGenerator::renderTemplate(
+    const std::string& templateStr,
+    const std::map<std::string, std::string>& vars) {
+    
+    std::string result = templateStr;
+    for (const auto& [key, value] : vars) {
+        std::string placeholder = "{" + key + "}";
+        result = StringUtils::replaceAll(result, placeholder, value);
+    }
+
+    std::cout << result << std::endl;
+
+    return result;
+}
+
+std::string AdapterCodeGenerator::generateIncludes(const std::vector<InterfaceInfo>& interfaces) {
+    std::set<std::string> uniqueIncludes;
+    
+    for (const auto& interface : interfaces) {
+        // include интерфейса
+        uniqueIncludes.insert(interface.className + ".hpp");
+        // include адаптера
+        uniqueIncludes.insert(interface.getAdapterName() + ".hpp");
+    }
+
+    // стандартные зависимости
+    uniqueIncludes.insert("ICommand.hpp");
+    uniqueIncludes.insert("IoC.hpp");
+
+    std::ostringstream result;
+    for (const auto& include : uniqueIncludes) {
+        result << "#include \"" << include << "\"\n";
+    }
+    return result.str();
+}
+
+===== adapter-generator/src/models/CustomImplementation.cpp ====
+/**
+ * @file CustomImplementation.cpp
+ * @brief Реализация структуры CustomImplementation
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#include "../../include/models/CustomImplementation.hpp"
+#include "../../include/utils/StringUtils.hpp"
+
+bool CustomImplementation::isValid() const {
+    return hasCustom && 
+           !className.empty() && 
+           !methodName.empty() && 
+           !fullReference.empty();
+}
+
+bool CustomImplementation::parseFromAnnotation(const std::string& annotation) {
+    // Ожидаемый формат: "ClassName::methodName"
+    std::vector<std::string> parts = StringUtils::split(annotation, "::");
+    if (parts.size() < 2) {
+        return false;
+    }
+
+    int size = parts.size();
+    // локальное имя файла с namespace 
+    std::string _className = StringUtils::trim(parts[0]);
+
+    for (int i = 1; i < size - 1; i++) {
+        std::string subPart = StringUtils::trim(parts[i]);
+        if (subPart.empty()) {
+            return false;
+        }
+        _className = _className + "::" + subPart;
+    }
+
+    className = _className;
+    methodName = StringUtils::trim(parts[size -1]);
+
+    if (className.empty() || methodName.empty()) {
+        return false;
+    }
+
+    fullReference = className + "::" + methodName;
+    hasCustom = true;
+    return true;
+}
+
+std::string CustomImplementation::getFullReference() const {
+    if (!isValid()) {
+        return "";
+    }
+    return className + "::" + methodName;
+}
+===== adapter-generator/src/models/InterfaceInfo.cpp ====
+/**
+ * @file InterfaceInfo.cpp
+ * @brief Реализация структуры InterfaceInfo
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#include "../../include/models/InterfaceInfo.hpp"
+#include "../../include/utils/StringUtils.hpp"
+
+std::string InterfaceInfo::getFullName() const {
+    if (namespaceName.empty()) {
+        return className;
+    }
+    return namespaceName + "::" + className;
+}
+
+std::string InterfaceInfo::getAdapterName() const {
+    std::string name = className;
+    // Если имя начинается с 'I', убираем его
+    if (StringUtils::startsWith(name, "I") && name.length() > 1) {
+        name = name.substr(1);
+    }
+    return name + "Adapter";
+}
+
+bool InterfaceInfo::isValidInterface() const {
+    if (methods.empty()) {
+        return false;
+    }
+
+    // Проверяем, что все методы чисто виртуальные
+    for (const auto& method : methods) {
+        if (!method.isPureVirtual) {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::vector<std::string> InterfaceInfo::getRequiredIncludes() const {
+    std::vector<std::string> includes;
+    
+    // Добавляем основные include
+    includes.push_back("memory");
+    includes.push_back("stdexcept");
+    
+    // Добавляем include для интерфейса
+    if (!sourceFile.empty()) {
+        includes.push_back(sourceFile);
+    }
+    
+    // Добавляем IoC include
+    includes.push_back("IoC.hpp");
+    includes.push_back("ICommand.hpp");
+    
+    // Добавляем includes для кастомных реализаций
+    for (const auto& method : methods) {
+        if (method.hasCustomImplementation()) {
+            // Предполагаем, что кастомные реализации находятся в отдельных файлах
+            std::string customInclude = method.customImpl.className + ".hpp";
+            includes.push_back(customInclude);
+        }
+    }
+    
+    return includes;
+}
+===== adapter-generator/src/models/MethodInfo.cpp ====
+/**
+ * @file MethodInfo.cpp
+ * @brief Реализация структуры MethodInfo
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#include "../../include/models/MethodInfo.hpp"
+#include "../../include/utils/StringUtils.hpp"
+
+bool MethodInfo::isGetter() const {
+    return StringUtils::startsWith(name, "get")
+        && name.length() > 3
+        && parameters.empty();
+}
+
+bool MethodInfo::isSetter() const {
+    return StringUtils::startsWith(name, "set")
+        && name.length() > 3
+        && parameters.size() == 1
+        && returnType == "void";
+}
+
+bool MethodInfo::isVoidMethod() const {
+    return returnType == "void" && parameters.empty();
+}
+
+std::string MethodInfo::getPropertyName() const {
+    if (StringUtils::startsWith(name, "get") || StringUtils::startsWith(name, "set")) {
+        return name.substr(3); // Убираем префикс get/set
+    }
+    return name;
+}
+
+bool MethodInfo::hasCustomImplementation() const {
+    return customImpl.hasCustom && customImpl.isValid();
+}
+===== adapter-generator/src/parsers/SimpleInterfaceParser.cpp ====
+/**
+ * @file SimpleInterfaceParser.cpp
+ * @brief Реализация парсера C++ интерфейсов
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#include "../../include/parsers/SimpleInterfaceParser.hpp"
+#include "../../include/utils/FileUtils.hpp"
+#include "../../include/utils/StringUtils.hpp"
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <iostream>
+
+SimpleInterfaceParser::SimpleInterfaceParser() {
+    // Регулярное выражение для поиска классов
+    classRegex_ = std::regex(R"(class\s+(\w+)\s*(?:\s*:\s*[^{]*)?\s*\{)");
+    
+    // Регулярное выражение для поиска чисто виртуальных методов
+    methodRegex_ = std::regex(
+        R"(\bvirtual\s+(.+?)\s+(\w+)\s*\(([^)]*)\)\s*(const)?\s*=\s*0\s*;)"
+    );
+    
+    // Регулярное выражение для поиска namespace
+    namespaceRegex_ = std::regex(R"(namespace\s+([A-Za-z_]\w*(?:(?:::\w+)+)?)\s*\{)");
+    
+    // Регулярное выражение для поиска кастомных аннотаций
+    customImplRegex_ = std::regex(R"(@custom_impl\s+(\w+::\w+))");
+}
+
+std::vector<InterfaceInfo> SimpleInterfaceParser::parseFile(const std::string& filePath) {
+    if (!FileUtils::fileExists(filePath)) {
+        throw std::runtime_error("File not found: " + filePath);
+    }
+
+    std::string content = FileUtils::readFile(filePath);
+    auto interfaces = parseContent(content);
+    
+    // Устанавливаем исходный файл для каждого интерфейса
+    for (auto& interface : interfaces) {
+        interface.sourceFile = FileUtils::getFileName(filePath);
+    }
+    
+    return interfaces;
+}
+
+std::vector<InterfaceInfo> SimpleInterfaceParser::parseContent(const std::string& content) {
+    std::vector<InterfaceInfo> interfaces;
+
+    // Поиск всех классов
+    std::sregex_iterator classBegin(content.begin(), content.end(), classRegex_);
+    std::sregex_iterator classEnd;
+
+    for (auto it = classBegin; it != classEnd; ++it) {
+        std::smatch match = *it;
+        std::string className = match[1].str();
+
+        // Находим содержимое класса
+        size_t classPos = match.position();
+        size_t braceStart = content.find('{', classPos);
+        if (braceStart == std::string::npos) {
+            continue;
+        }
+
+        size_t braceEnd = findMatchingBrace(content, braceStart);
+        if (braceEnd == std::string::npos) {
+            continue;
+        }
+
+        std::string classContent = content.substr(braceStart + 1, braceEnd - braceStart - 1);
+
+        // Парсим методы класса
+        auto methods = parseMethods(classContent, className);
+
+        // Проверяем, что это интерфейс (только чисто виртуальные методы)
+        if (!methods.empty() && hasOnlyPureVirtual(methods)) {
+            InterfaceInfo interface;
+            interface.className = className;
+            interface.namespaceName = extractNamespace(content, classPos);
+            interface.methods = std::move(methods);
+            
+            interfaces.push_back(interface);
+            
+            std::cout << "Found interface: " << interface.getFullName() 
+                      << " with " << interface.methods.size() << " methods" << std::endl;
+        }
+    }
+
+    return interfaces;
+}
+
+std::vector<MethodInfo> SimpleInterfaceParser::parseMethods(
+    const std::string& classContent, 
+    const std::string& interfaceName) {
+    
+    std::vector<MethodInfo> methods;
+
+    std::sregex_iterator methodBegin(classContent.begin(), classContent.end(), methodRegex_);
+    std::sregex_iterator methodEnd;
+
+    // позиция метода в классе-строке
+    size_t methodPos = 0;
+    for (auto it = methodBegin; it != methodEnd; ++it) {
+        std::smatch match = *it;
+        
+        MethodInfo method;
+        method.returnType = StringUtils::trim(match[1].str());
+        method.name = match[2].str();
+        method.parameters = parseParameters(match[3].str());
+        method.isConst = !match[4].str().empty();
+        method.isPureVirtual = true;
+
+        // уменьшаем строку-класс 
+        // (выкидываем всё, что было до последнего обработанного метода)
+        std::string shortStr = classContent.substr(methodPos);
+        // Извлекаем комментарии перед методом для поиска аннотаций
+        std::string methodComments = extractMethodComments(shortStr, it->position());
+        methodPos = it->position();
+        
+        method.customImpl = parseCustomImplementation(methodComments);
+
+        methods.push_back(method);
+
+        std::cout << "  Found method: " << method.returnType << " " << method.name;
+        if (method.hasCustomImplementation()) {
+            std::cout << " (custom: " << method.customImpl.getFullReference() << ")";
+        }
+        std::cout << std::endl;
+    }
+
+    return methods;
+}
+
+std::vector<std::string> SimpleInterfaceParser::parseParameters(const std::string& paramStr) {
+    std::vector<std::string> params;
+    if (paramStr.empty()) {
+        return params;
+    }
+
+    auto paramList = StringUtils::split(paramStr, ',');
+    for (const auto& param : paramList) {
+        std::string trimmed = StringUtils::trim(param);
+        if (!trimmed.empty()) {
+            params.push_back(trimmed);
+        }
+    }
+
+    return params;
+}
+
+bool SimpleInterfaceParser::hasOnlyPureVirtual(const std::vector<MethodInfo>& methods) {
+    return !methods.empty() && 
+           std::all_of(methods.begin(), methods.end(),
+                      [](const MethodInfo& m) { return m.isPureVirtual; });
+}
+
+std::string SimpleInterfaceParser::extractNamespace(const std::string& content, size_t classPos) {
+    auto subs = content.substr(0, classPos);
+
+    std::vector<std::string> namespaces;
+    std::sregex_iterator it(content.begin(), content.end(), namespaceRegex_);
+    std::sregex_iterator end;
+    while (it != end) {
+        namespaces.push_back((*it)[1].str());
+        ++it;
+    }
+    
+    return namespaces.empty() ? "" : namespaces.back();
+}
+
+size_t SimpleInterfaceParser::findMatchingBrace(const std::string& content, size_t start) {
+    int braceCount = 1;
+    for (size_t i = start + 1; i < content.size(); ++i) {
+        if (content[i] == '{') {
+            braceCount++;
+        } else if (content[i] == '}') {
+            braceCount--;
+            if (braceCount == 0) {
+                return i;
+            }
+        }
+    }
+    return std::string::npos;
+}
+
+CustomImplementation SimpleInterfaceParser::parseCustomImplementation(
+    const std::string& commentContent) {
+
+    CustomImplementation impl;
+    
+    std::sregex_iterator customBegin(commentContent.begin(), commentContent.end(), customImplRegex_);
+    std::sregex_iterator customEnd;
+
+    for (auto it = customBegin; it != customEnd; ++it) {
+        std::smatch match = *it;
+        std::string annotation = match[1].str();
+        
+        if (impl.parseFromAnnotation(annotation)) {
+            break; // Используем первую найденную аннотацию
+        }
+    }
+
+    return impl;
+}
+
+std::string SimpleInterfaceParser::extractMethodComments(
+    const std::string& content, 
+    size_t methodPos) {
+    
+    // Ищем комментарии перед методом (в пределах 500 символов)
+    size_t searchStart = (methodPos > 500) ? methodPos - 500 : 0;
+    std::string searchArea = content.substr(searchStart, methodPos - searchStart);
+
+    // Находим последний блочный комментарий или группу строчных комментариев
+    std::string comments;
+    
+    // Поиск блочного комментария /**...*/ 
+    std::regex blockCommentRegex(R"(/\*\*([^*]|\*(?!/))*\*/)");
+    std::sregex_iterator blockBegin(searchArea.begin(), searchArea.end(), blockCommentRegex);
+    std::sregex_iterator blockEnd;
+    
+    for (auto it = blockBegin; it != blockEnd; ++it) {
+        comments = it->str();
+    }
+
+    return comments;
+}
+
+std::string SimpleInterfaceParser::trim(const std::string& str) {
+    return StringUtils::trim(str);
+}
+===== adapter-generator/src/utils/FileUtils.cpp ====
+// FileUtils.cpp
+#include "../../include/utils/FileUtils.hpp"
+#include <fstream>
+#include <sstream>
+#include <stdexcept>
+#include <filesystem>
+
+std::string FileUtils::readFile(const std::string& filePath) {
+    std::ifstream in(filePath, std::ios::in | std::ios::binary);
+    if (!in) {
+        throw std::runtime_error("Cannot open file for reading: " + filePath);
+    }
+    std::ostringstream contents;
+    contents << in.rdbuf();
+    if (in.fail() && !in.eof()) {
+        throw std::runtime_error("Error while reading file: " + filePath);
+    }
+    return contents.str();
+}
+
+void FileUtils::writeFile(const std::string& filePath, const std::string& content) {
+    std::ofstream out(filePath, std::ios::out | std::ios::binary);
+    if (!out) {
+        throw std::runtime_error("Cannot open file for writing: " + filePath);
+    }
+    out << content;
+    if (!out) {
+        throw std::runtime_error("Error while writing to file: " + filePath);
+    }
+}
+
+std::vector<std::string> FileUtils::findFilesWithExtension(
+    const std::string& directory,
+    const std::string& extension,
+    bool recursive)
+{
+    std::vector<std::string> result;
+    std::filesystem::directory_options opts = recursive
+        ? std::filesystem::directory_options::follow_directory_symlink
+        : std::filesystem::directory_options::none;
+    std::filesystem::recursive_directory_iterator it(directory, opts), end;
+    std::filesystem::directory_iterator it_nonrec(directory), end_nonrec;
+    if (recursive) {
+        for (; it != end; ++it) {
+            if (!it->is_directory() && it->path().extension() == extension) {
+                result.push_back(it->path().string());
+            }
+        }
+    } else {
+        for (; it_nonrec != end_nonrec; ++it_nonrec) {
+            if (!it_nonrec->is_directory() && it_nonrec->path().extension() == extension) {
+                result.push_back(it_nonrec->path().string());
+            }
+        }
+    }
+    return result;
+}
+
+bool FileUtils::fileExists(const std::string& filePath) {
+    return std::filesystem::exists(filePath);
+}
+
+void FileUtils::createDirectories(const std::string& dirPath) {
+    std::error_code ec;
+    if (!std::filesystem::create_directories(dirPath, ec) && ec) {
+        throw std::runtime_error("Cannot create directories: " + dirPath + " (" + ec.message() + ")");
+    }
+}
+
+std::string FileUtils::getFileName(const std::string& path) {
+    if (path.empty()) return {};
+    // Найти позицию последнего символа '/' или '\'
+    size_t pos1 = path.find_last_of('/');
+    size_t pos2 = path.find_last_of('\\');
+    size_t pos = std::string::npos;
+    if (pos1 != std::string::npos && pos2 != std::string::npos) {
+        pos = std::max(pos1, pos2);
+    } else if (pos1 != std::string::npos) {
+        pos = pos1;
+    } else if (pos2 != std::string::npos) {
+        pos = pos2;
+    }
+    return (pos == std::string::npos) ? path : path.substr(pos + 1);
+}
+
+std::string FileUtils::getFileExtension(const std::string& filePath) {
+    return std::filesystem::path(filePath).extension().string();
+}
+
+===== adapter-generator/src/utils/StringUtils.cpp ====
+/**
+ * @file StringUtils.cpp
+ * @brief Реализация утилит для работы со строками
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#include "../../include/utils/StringUtils.hpp"
+#include <algorithm>
+#include <sstream>
+#include <cctype>
+
+std::string StringUtils::trim(const std::string& str) {
+    size_t first = str.find_first_not_of(" \t\n\r");
+    if (first == std::string::npos) {
+        return "";
+    }
+    size_t last = str.find_last_not_of(" \t\n\r");
+    return str.substr(first, (last - first + 1));
+}
+
+std::vector<std::string> StringUtils::split(const std::string& str, char delimiter) {
+    std::vector<std::string> result;
+    std::stringstream ss(str);
+    std::string item;
+    
+    while (std::getline(ss, item, delimiter)) {
+        result.push_back(item);
+    }
+    
+    return result;
+}
+
+std::vector<std::string> StringUtils::split(const std::string& str, const std::string& delimiter) {
+    std::vector<std::string> result;
+    size_t start = 0;
+    size_t end = 0;
+    size_t delim_len = delimiter.length();
+
+    while ((end = str.find(delimiter, start)) != std::string::npos) {
+        result.push_back(str.substr(start, end - start));
+        start = end + delim_len;
+    }
+    result.push_back(str.substr(start));
+    return result;
+}
+
+
+std::string StringUtils::replaceAll(const std::string& str, 
+                                   const std::string& from, 
+                                   const std::string& to) {
+    std::string result = str;
+    size_t pos = 0;
+    
+    while ((pos = result.find(from, pos)) != std::string::npos) {
+        result.replace(pos, from.length(), to);
+        pos += to.length();
+    }
+    
+    return result;
+}
+
+bool StringUtils::startsWith(const std::string& str, const std::string& prefix) {
+    if (prefix.length() > str.length()) {
+        return false;
+    }
+    return str.substr(0, prefix.length()) == prefix;
+}
+
+bool StringUtils::endsWith(const std::string& str, const std::string& suffix) {
+    if (suffix.length() > str.length()) {
+        return false;
+    }
+    return str.substr(str.length() - suffix.length()) == suffix;
+}
+
+std::string StringUtils::capitalize(const std::string& str) {
+    if (str.empty()) {
+        return str;
+    }
+    
+    std::string result = str;
+    result[0] = std::toupper(result[0]);
+    return result;
+}
+
+std::string StringUtils::toSnakeCase(const std::string& camelCase) {
+    std::string result;
+    for (size_t i = 0; i < camelCase.length(); ++i) {
+        char c = camelCase[i];
+        if (std::isupper(c) && i > 0) {
+            result += '_';
+        }
+        result += std::tolower(c);
+    }
+    return result;
+}
+===== adapter-generator/tests/TestAdapterCodeGenerator.cpp ====
+/**
+ * @file TestAdapterCodeGenerator.cpp
+ * @brief Unit-тесты для AdapterCodeGenerator
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#include <gtest/gtest.h>
+#include "../include/generators/AdapterCodeGenerator.hpp"
+#include "../include/models/InterfaceInfo.hpp"
+#include "../include/models/MethodInfo.hpp"
+
+/**
+ * @brief Тестовый класс для AdapterCodeGenerator
+ */
+class AdapterCodeGeneratorTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        generator = std::make_unique<AdapterCodeGenerator>();
+        setupTestInterface();
+    }
+
+    void TearDown() override {
+        generator.reset();
+    }
+
+    void setupTestInterface() {
+        testInterface.className = "IMovable";
+        testInterface.namespaceName = "";
+        
+        // Добавляем getter метод
+        MethodInfo getPosition;
+        getPosition.name = "getPosition";
+        getPosition.returnType = "Vector";
+        getPosition.isConst = true;
+        getPosition.isPureVirtual = true;
+        testInterface.methods.push_back(getPosition);
+        
+        // Добавляем setter метод
+        MethodInfo setPosition;
+        setPosition.name = "setPosition";
+        setPosition.returnType = "void";
+        setPosition.parameters = {"const Vector& pos"};
+        setPosition.isPureVirtual = true;
+        testInterface.methods.push_back(setPosition);
+        
+        // Добавляем void метод
+        MethodInfo finish;
+        finish.name = "finish";
+        finish.returnType = "void";
+        finish.isPureVirtual = true;
+        testInterface.methods.push_back(finish);
+    }
+
+    std::unique_ptr<AdapterCodeGenerator> generator;
+    InterfaceInfo testInterface;
+};
+
+/**
+ * @brief Тест генерации базового адаптера
+ */
+TEST_F(AdapterCodeGeneratorTest, GenerateBasicAdapter) {
+    std::string result = generator->generateAdapter(testInterface);
+    
+    // Проверяем основную структуру класса
+    EXPECT_NE(result.find("class MovableAdapter"), std::string::npos);
+    EXPECT_NE(result.find("public IMovable"), std::string::npos);
+    EXPECT_NE(result.find("std::shared_ptr<IGameObject> m_gameObject;"), std::string::npos);
+    EXPECT_NE(result.find("explicit MovableAdapter(std::shared_ptr<IGameObject> gameObject)"), std::string::npos);
+    
+    // Проверяем наличие всех методов
+    EXPECT_NE(result.find("Vector getPosition()"), std::string::npos);
+    EXPECT_NE(result.find("void setPosition("), std::string::npos);
+    EXPECT_NE(result.find("void finish()"), std::string::npos);
+}
+
+/**
+ * @brief Тест генерации getter метода
+ */
+TEST_F(AdapterCodeGeneratorTest, GenerateGetterMethod) {
+    std::string result = generator->generateAdapter(testInterface);
+
+    // Проверяем getter метод
+    EXPECT_NE(result.find("Vector getPosition() const override"), std::string::npos);
+    EXPECT_NE(result.find("IoC::resolve<Vector>(\"IMovable:Position.get\", m_gameObject)"), std::string::npos);
+}
+
+/**
+ * @brief Тест генерации setter метода
+ */
+TEST_F(AdapterCodeGeneratorTest, GenerateSetterMethod) {
+    std::string result = generator->generateAdapter(testInterface);
+    
+    // Проверяем setter метод
+    EXPECT_NE(result.find("void setPosition(const Vector& value) override"), std::string::npos);
+    EXPECT_NE(result.find("IoC::resolve<ICommand>(\"IMovable:Position.set\""), std::string::npos);
+    EXPECT_NE(result.find("m_gameObject, std::make_shared<Vector>(value)"), std::string::npos);
+    EXPECT_NE(result.find("command->execute()"), std::string::npos);
+}
+
+/**
+ * @brief Тест генерации void метода
+ */
+TEST_F(AdapterCodeGeneratorTest, GenerateVoidMethod) {
+    std::string result = generator->generateAdapter(testInterface);
+    
+    // Проверяем void метод
+    EXPECT_NE(result.find("void finish() override"), std::string::npos);
+    EXPECT_NE(result.find("command = IoC::resolve<ICommand>(\"IMovable:finish\", m_gameObject)"), std::string::npos);
+    EXPECT_NE(result.find("command->execute()"), std::string::npos);
+}
+
+/**
+ * @brief Тест генерации адаптера с namespace
+ */
+TEST_F(AdapterCodeGeneratorTest, GenerateAdapterWithNamespace) {
+    testInterface.namespaceName = "SpaceShip::Operations";
+    
+    std::string result = generator->generateAdapter(testInterface);
+    
+    // Проверяем использование полного имени интерфейса
+    EXPECT_NE(result.find("public SpaceShip::Operations::IMovable"), std::string::npos);
+    
+    // Проверяем, что в IoC вызовах используется полное имя
+    EXPECT_NE(result.find("\"SpaceShip::Operations::IMovable:Position.get\""), std::string::npos);
+}
+
+/**
+ * @brief Тест генерации адаптера с кастомными реализациями
+ */
+TEST_F(AdapterCodeGeneratorTest, GenerateAdapterWithCustomImplementation) {
+    // Добавляем метод с кастомной реализацией
+    MethodInfo customMethod;
+    customMethod.name = "getVelocity";
+    customMethod.returnType = "Vector";
+    customMethod.isConst = true;
+    customMethod.isPureVirtual = true;
+    customMethod.customImpl.hasCustom = true;
+    customMethod.customImpl.className = "MovableImplementations";
+    customMethod.customImpl.methodName = "calculateVelocity";
+    customMethod.customImpl.fullReference = "MovableImplementations::calculateVelocity";
+    
+    testInterface.methods.push_back(customMethod);
+    
+    std::string result = generator->generateAdapter(testInterface);
+
+    // Проверяем использование кастомной реализации
+    EXPECT_NE(result.find("Vector getVelocity() const override"), std::string::npos);
+    EXPECT_NE(result.find("MovableImplementations::calculateVelocity(m_gameObject)"), std::string::npos);
+    
+    // Не должно быть обычного IoC вызова для кастомного метода
+    EXPECT_EQ(result.find("IoC::resolve<Vector>(\"IMovable:Velocity.get\""), std::string::npos);
+}
+
+/**
+ * @brief Тест генерации кода регистрации для одного интерфейса
+ */
+TEST_F(AdapterCodeGeneratorTest, GenerateRegistrationCodeSingleInterface) {
+    std::vector<InterfaceInfo> interfaces = {testInterface};
+    
+    std::string result = generator->generateRegistrationCode(interfaces);
+    
+    // Проверяем основную структуру
+    EXPECT_NE(result.find("class AdapterRegistry"), std::string::npos);
+    EXPECT_NE(result.find("static void registerAll()"), std::string::npos);
+    
+    // Проверяем регистрацию конкретного адаптера
+    EXPECT_NE(result.find("IoC::resolve<ICommand>(\"IoC.Register\""), std::string::npos);
+    EXPECT_NE(result.find("\"Adapter:IMovable\""), std::string::npos);
+}
+
+/**
+ * @brief Тест генерации кода регистрации для нескольких интерфейсов
+ */
+TEST_F(AdapterCodeGeneratorTest, GenerateRegistrationCodeMultipleInterfaces) {
+    // Создаем второй интерфейс
+    InterfaceInfo secondInterface;
+    secondInterface.className = "IRotatable";
+    secondInterface.namespaceName = "";
+    
+    MethodInfo getDirection;
+    getDirection.name = "getDirection";
+    getDirection.returnType = "int";
+    getDirection.isConst = true;
+    getDirection.isPureVirtual = true;
+    secondInterface.methods.push_back(getDirection);
+    
+    std::vector<InterfaceInfo> interfaces = {testInterface, secondInterface};
+    
+    std::string result = generator->generateRegistrationCode(interfaces);
+    
+    // Проверяем регистрацию обоих адаптеров
+    EXPECT_NE(result.find("\"Adapter:IMovable\""), std::string::npos);
+    EXPECT_NE(result.find("\"Adapter:IRotatable\""), std::string::npos);
+}
+
+/**
+ * @brief Тест генерации адаптера для интерфейса без методов
+ */
+TEST_F(AdapterCodeGeneratorTest, GenerateAdapterForEmptyInterface) {
+    InterfaceInfo emptyInterface;
+    emptyInterface.className = "IEmpty";
+    emptyInterface.namespaceName = "";
+    // Нет методов
+    
+    std::string result = generator->generateAdapter(emptyInterface);
+    
+    // Основная структура должна быть создана
+    EXPECT_NE(result.find("class EmptyAdapter"), std::string::npos);
+    EXPECT_NE(result.find("public IEmpty"), std::string::npos);
+    
+    // Должен быть только деструктор с override, но не методы интерфейса
+    // Считаем количество override - должно быть только 1 (деструктор)
+    size_t override_count = 0;
+    size_t pos = 0;
+    while ((pos = result.find("override", pos)) != std::string::npos) {
+        override_count++;
+        pos += 8; // длина "override"
+    }
+    
+    EXPECT_EQ(override_count, 1); // Только деструктор
+    
+    // Или более точная проверка - нет методов интерфейса
+    // (методы интерфейса обычно не являются деструкторами)
+    EXPECT_EQ(result.find(") override;"), std::string::npos); // Нет методов с override и ;
+}
+
+
+/**
+ * @brief Тест генерации адаптера с комплексными типами параметров
+ */
+TEST_F(AdapterCodeGeneratorTest, GenerateAdapterWithComplexParameters) {
+    InterfaceInfo complexInterface;
+    complexInterface.className = "IComplexInterface";
+    complexInterface.namespaceName = "";
+    
+    // Метод с комплексными параметрами
+    MethodInfo complexMethod;
+    complexMethod.name = "processData";
+    complexMethod.returnType = "void";
+    complexMethod.parameters = {
+        "const std::vector<std::shared_ptr<Object>>& objects",
+        "std::function<bool(const Object&)> predicate",
+        "int flags"
+    };
+    complexMethod.isPureVirtual = true;
+    complexInterface.methods.push_back(complexMethod);
+    
+    std::string result = generator->generateAdapter(complexInterface);
+    
+    // Проверяем корректную генерацию сигнатуры метода
+    EXPECT_NE(result.find("void processData("), std::string::npos);
+    EXPECT_NE(result.find("const std::vector<std::shared_ptr<Object>>& objects"), std::string::npos);
+    EXPECT_NE(result.find("std::function<bool(const Object&)> predicate"), std::string::npos);
+    EXPECT_NE(result.find("int flags"), std::string::npos);
+    
+    // Проверяем IoC вызов
+    EXPECT_NE(result.find("IoC::resolve<ICommand>(\"IComplexInterface:processData\""), std::string::npos);
+    EXPECT_NE(result.find("m_gameObject, objects, predicate, flags"), std::string::npos);
+}
+
+/**
+ * @brief Тест обработки специальных символов в именах
+ */
+TEST_F(AdapterCodeGeneratorTest, HandleSpecialCharactersInNames) {
+    testInterface.className = "ISpecial_Interface";
+    
+    std::string result = generator->generateAdapter(testInterface);
+    
+    // Имя адаптера должно быть корректно сформировано
+    EXPECT_NE(result.find("class Special_InterfaceAdapter"), std::string::npos);
+}
+
+/**
+ * @brief Тест генерации include директив
+ */
+TEST_F(AdapterCodeGeneratorTest, GenerateIncludes) {
+    InterfaceInfo secondInterface;
+    secondInterface.className = "IRotatable";
+    secondInterface.namespaceName = "Different::Namespace";
+    
+    std::vector<InterfaceInfo> interfaces = {testInterface, secondInterface};
+    
+    std::string result = generator->generateRegistrationCode(interfaces);
+    
+    // Проверяем наличие стандартных include'ов
+    EXPECT_NE(result.find("#include \"IoC.hpp\""), std::string::npos);
+    EXPECT_NE(result.find("#include \"ICommand.hpp\""), std::string::npos);
+    
+    // Проверяем include'ы для интерфейсов
+    EXPECT_NE(result.find("#include \"IMovable.hpp\""), std::string::npos);
+    EXPECT_NE(result.find("#include \"IRotatable.hpp\""), std::string::npos);
+}
+
+/**
+ * @brief Тест устойчивости к некорректным данным
+ */
+TEST_F(AdapterCodeGeneratorTest, HandleIncorrectData) {
+    InterfaceInfo incorrectInterface;
+    incorrectInterface.className = "";  // Пустое имя
+    incorrectInterface.namespaceName = "";
+    
+    // Должен либо бросить исключение, либо обработать корректно
+    EXPECT_NO_THROW({
+        std::string result = generator->generateAdapter(incorrectInterface);
+        // Если не бросает исключение, результат не должен быть пустым
+        EXPECT_FALSE(result.empty());
+    });
+}
+
+/**
+ * @brief Тест производительности генерации большого количества методов
+ */
+TEST_F(AdapterCodeGeneratorTest, PerformanceWithManyMethods) {
+    InterfaceInfo largeInterface;
+    largeInterface.className = "ILargeInterface";
+    largeInterface.namespaceName = "";
+    
+    // Создаем много методов
+    for (int i = 0; i < 100; ++i) {
+        MethodInfo method;
+        method.name = "method" + std::to_string(i);
+        method.returnType = "void";
+        method.isPureVirtual = true;
+        largeInterface.methods.push_back(method);
+    }
+    
+    auto start = std::chrono::high_resolution_clock::now();
+    std::string result = generator->generateAdapter(largeInterface);
+    auto end = std::chrono::high_resolution_clock::now();
+    
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    
+    // Генерация не должна занимать слишком много времени (меньше 1 секунды)
+    EXPECT_LT(duration.count(), 1000);
+    
+    // Результат должен содержать все методы
+    for (int i = 0; i < 100; ++i) {
+        std::string methodName = "method" + std::to_string(i);
+        EXPECT_NE(result.find(methodName), std::string::npos);
+    }
+}
+===== adapter-generator/tests/TestCustomImplementation.cpp ====
+/**
+ * @file TestCustomImplementation.cpp
+ * @brief Unit-тесты для структуры CustomImplementation
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#include <gtest/gtest.h>
+#include "../include/models/CustomImplementation.hpp"
+
+/**
+ * @brief Тестовый класс для CustomImplementation
+ */
+class CustomImplementationTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        // Базовая настройка
+        validImpl.hasCustom = true;
+        validImpl.className = "TestClass";
+        validImpl.methodName = "testMethod";
+        validImpl.fullReference = "TestClass::testMethod";
+    }
+
+    CustomImplementation validImpl;
+};
+
+/**
+ * @brief Тест валидации корректной кастомной реализации
+ */
+TEST_F(CustomImplementationTest, ValidImplementationTest) {
+    EXPECT_TRUE(validImpl.isValid());
+    EXPECT_TRUE(validImpl.hasCustom);
+    EXPECT_EQ(validImpl.className, "TestClass");
+    EXPECT_EQ(validImpl.methodName, "testMethod");
+    EXPECT_EQ(validImpl.getFullReference(), "TestClass::testMethod");
+}
+
+/**
+ * @brief Тест невалидных кастомных реализаций
+ */
+TEST_F(CustomImplementationTest, InvalidImplementationTest) {
+    // Тест с hasCustom = false
+    CustomImplementation impl1;
+    impl1.hasCustom = false;
+    impl1.className = "TestClass";
+    impl1.methodName = "testMethod";
+    EXPECT_FALSE(impl1.isValid());
+
+    // Тест с пустым именем класса
+    CustomImplementation impl2;
+    impl2.hasCustom = true;
+    impl2.className = "";
+    impl2.methodName = "testMethod";
+    EXPECT_FALSE(impl2.isValid());
+
+    // Тест с пустым именем метода
+    CustomImplementation impl3;
+    impl3.hasCustom = true;
+    impl3.className = "TestClass";
+    impl3.methodName = "";
+    EXPECT_FALSE(impl3.isValid());
+
+    // Тест с пустыми именами класса и метода
+    CustomImplementation impl4;
+    impl4.hasCustom = true;
+    impl4.className = "";
+    impl4.methodName = "";
+    EXPECT_FALSE(impl4.isValid());
+}
+
+/**
+ * @brief Тест парсинга корректных аннотаций
+ */
+TEST_F(CustomImplementationTest, ParseValidAnnotationsTest) {
+    CustomImplementation impl;
+    
+    // Простая аннотация
+    EXPECT_TRUE(impl.parseFromAnnotation("TestClass::testMethod"));
+    EXPECT_TRUE(impl.hasCustom);
+    EXPECT_EQ(impl.className, "TestClass");
+    EXPECT_EQ(impl.methodName, "testMethod");
+    EXPECT_EQ(impl.getFullReference(), "TestClass::testMethod");
+
+    // Аннотация с namespace
+    CustomImplementation impl2;
+    EXPECT_TRUE(impl2.parseFromAnnotation("MyNamespace::TestClass::testMethod"));
+    EXPECT_TRUE(impl2.hasCustom);
+    EXPECT_EQ(impl2.className, "MyNamespace::TestClass");
+    EXPECT_EQ(impl2.methodName, "testMethod");
+    EXPECT_EQ(impl2.getFullReference(), "MyNamespace::TestClass::testMethod");
+
+    // Аннотация с вложенными namespace
+    CustomImplementation impl3;
+    EXPECT_TRUE(impl3.parseFromAnnotation("Outer::Inner::TestClass::testMethod"));
+    EXPECT_TRUE(impl3.hasCustom);
+    EXPECT_EQ(impl3.className, "Outer::Inner::TestClass");
+    EXPECT_EQ(impl3.methodName, "testMethod");
+    EXPECT_EQ(impl3.getFullReference(), "Outer::Inner::TestClass::testMethod");
+}
+
+/**
+ * @brief Тест парсинга некорректных аннотаций
+ */
+TEST_F(CustomImplementationTest, ParseInvalidAnnotationsTest) {
+    CustomImplementation impl;
+
+    // Пустая аннотация
+    EXPECT_FALSE(impl.parseFromAnnotation(""));
+    EXPECT_FALSE(impl.hasCustom);
+
+    // Аннотация без разделителя
+    EXPECT_FALSE(impl.parseFromAnnotation("TestClasstestMethod"));
+    EXPECT_FALSE(impl.hasCustom);
+
+    // Аннотация только с именем класса
+    EXPECT_FALSE(impl.parseFromAnnotation("TestClass::"));
+    EXPECT_FALSE(impl.hasCustom);
+
+    // Аннотация только с именем метода
+    EXPECT_FALSE(impl.parseFromAnnotation("::testMethod"));
+    EXPECT_FALSE(impl.hasCustom);
+
+    // Аннотация с только разделителем
+    EXPECT_FALSE(impl.parseFromAnnotation("::"));
+    EXPECT_FALSE(impl.hasCustom);
+
+    // Аннотация с пробелами (должна обрабатываться)
+    CustomImplementation impl2;
+    EXPECT_TRUE(impl2.parseFromAnnotation(" TestClass::testMethod "));
+    EXPECT_TRUE(impl2.hasCustom);
+    EXPECT_EQ(impl2.className, "TestClass");
+    EXPECT_EQ(impl2.methodName, "testMethod");
+}
+
+/**
+ * @brief Тест получения полной ссылки
+ */
+TEST_F(CustomImplementationTest, GetFullReferenceTest) {
+    EXPECT_EQ(validImpl.getFullReference(), "TestClass::testMethod");
+
+    // Тест с пустыми полями
+    CustomImplementation emptyImpl;
+    EXPECT_EQ(emptyImpl.getFullReference(), "");
+
+    // Тест с только именем класса
+    CustomImplementation classOnlyImpl;
+    classOnlyImpl.className = "TestClass";
+    EXPECT_EQ(classOnlyImpl.getFullReference(), "");
+
+    // Тест с только именем метода
+    CustomImplementation methodOnlyImpl;
+    methodOnlyImpl.methodName = "testMethod";
+    EXPECT_EQ(methodOnlyImpl.getFullReference(), "");
+}
+
+/**
+ * @brief Тест копирования и присваивания
+ */
+TEST_F(CustomImplementationTest, CopyAssignmentTest) {
+    // Тест копирования
+    CustomImplementation copied = validImpl;
+    EXPECT_EQ(copied.hasCustom, validImpl.hasCustom);
+    EXPECT_EQ(copied.className, validImpl.className);
+    EXPECT_EQ(copied.methodName, validImpl.methodName);
+    EXPECT_EQ(copied.getFullReference(), validImpl.getFullReference());
+    EXPECT_TRUE(copied.isValid());
+
+    // Тест присваивания
+    CustomImplementation assigned;
+    assigned = validImpl;
+    EXPECT_EQ(assigned.hasCustom, validImpl.hasCustom);
+    EXPECT_EQ(assigned.className, validImpl.className);
+    EXPECT_EQ(assigned.methodName, validImpl.methodName);
+    EXPECT_EQ(assigned.getFullReference(), validImpl.getFullReference());
+    EXPECT_TRUE(assigned.isValid());
+}
+
+/**
+ * @brief Тест изменения полей после парсинга
+ */
+TEST_F(CustomImplementationTest, ModificationAfterParsingTest) {
+    CustomImplementation impl;
+    EXPECT_TRUE(impl.parseFromAnnotation("OriginalClass::originalMethod"));
+    
+    // Изменяем поля
+    impl.className = "ModifiedClass";
+    impl.methodName = "modifiedMethod";
+    
+    // fullReference не обновляется автоматически при изменении полей
+    EXPECT_EQ(impl.fullReference, "OriginalClass::originalMethod");
+    
+    // Но getFullReference() возвращает актуальное значение
+    EXPECT_EQ(impl.getFullReference(), "ModifiedClass::modifiedMethod");
+}
+
+/**
+ * @brief Тест граничных случаев
+ */
+TEST_F(CustomImplementationTest, EdgeCasesTest) {
+    CustomImplementation impl;
+
+    // Аннотация с множественными разделителями
+    EXPECT_FALSE(impl.parseFromAnnotation("Test::Class::::method"));
+    
+    // Аннотация с очень длинными именами
+    std::string longClassName(1000, 'A');
+    std::string longMethodName(1000, 'B');
+    std::string longAnnotation = longClassName + "::" + longMethodName;
+    
+    CustomImplementation longImpl;
+    EXPECT_TRUE(longImpl.parseFromAnnotation(longAnnotation));
+    EXPECT_EQ(longImpl.className, longClassName);
+    EXPECT_EQ(longImpl.methodName, longMethodName);
+
+    // Аннотация с специальными символами в именах
+    CustomImplementation specialImpl;
+    EXPECT_TRUE(specialImpl.parseFromAnnotation("Test_Class123::test_method_456"));
+    EXPECT_EQ(specialImpl.className, "Test_Class123");
+    EXPECT_EQ(specialImpl.methodName, "test_method_456");
+}
+
+/**
+ * @brief Тест состояния по умолчанию
+ */
+TEST_F(CustomImplementationTest, DefaultStateTest) {
+    CustomImplementation defaultImpl;
+    
+    EXPECT_FALSE(defaultImpl.hasCustom);
+    EXPECT_TRUE(defaultImpl.className.empty());
+    EXPECT_TRUE(defaultImpl.methodName.empty());
+    EXPECT_TRUE(defaultImpl.fullReference.empty());
+    EXPECT_FALSE(defaultImpl.isValid());
+    EXPECT_EQ(defaultImpl.getFullReference(), "");
+}
+
+/**
+ * @brief Тест обновления fullReference при парсинге
+ */
+TEST_F(CustomImplementationTest, FullReferenceUpdateTest) {
+    CustomImplementation impl;
+    
+    // Изначально fullReference пуста
+    EXPECT_TRUE(impl.getFullReference().empty());
+    
+    // После парсинга fullReference должна обновиться
+    EXPECT_TRUE(impl.parseFromAnnotation("TestClass::testMethod"));
+    EXPECT_EQ(impl.getFullReference(), "TestClass::testMethod");
+    
+    // При повторном парсинге fullReference должна обновиться
+    EXPECT_TRUE(impl.parseFromAnnotation("AnotherClass::anotherMethod"));
+    EXPECT_EQ(impl.getFullReference(), "AnotherClass::anotherMethod");
+}
+
+/**
+ * @brief Тест производительности парсинга
+ */
+TEST_F(CustomImplementationTest, ParsingPerformanceTest) {
+    const int iterationCount = 10000;
+    std::vector<std::string> annotations = {
+        "Class1::method1",
+        "Namespace::Class2::method2",
+        "Outer::Inner::Class3::method3",
+        "VeryLongNamespace::VeryLongClassName::veryLongMethodName"
+    };
+    
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    for (int i = 0; i < iterationCount; ++i) {
+        CustomImplementation impl;
+        const std::string& annotation = annotations[i % annotations.size()];
+        bool result = impl.parseFromAnnotation(annotation);
+        EXPECT_TRUE(result); // Убеждаемся, что парсинг успешен
+    }
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    
+    std::cout << "Performance test: parsed " << iterationCount 
+              << " annotations in " << duration.count() << "ms" << std::endl;
+    
+    // Парсинг должен быть быстрым (менее 1 секунды для 10000 итераций)
+    EXPECT_LT(duration.count(), 1000);
+}
+===== adapter-generator/tests/TestFileUtils.cpp ====
+/**
+ * @file TestFileUtils.cpp
+ * @brief Unit-тесты для FileUtils
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#include <gtest/gtest.h>
+#include <filesystem>
+#include <fstream>
+#include "../include/utils/FileUtils.hpp"
+
+/**
+ * @brief Тестовый класс для FileUtils
+ */
+class FileUtilsTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        // Создаем временную директорию для тестов
+        testDir = std::filesystem::temp_directory_path() / "fileutils_test";
+        std::filesystem::create_directories(testDir);
+    }
+
+    void TearDown() override {
+        // Очищаем временные файлы
+        std::filesystem::remove_all(testDir);
+    }
+
+    std::filesystem::path testDir;
+};
+
+/**
+ * @brief Тест чтения и записи файлов
+ */
+TEST_F(FileUtilsTest, ReadWriteFileTest) {
+    std::string testFilePath = (testDir / "test_file.txt").string();
+    std::string testContent = R"(
+        This is a test content.
+        It contains multiple lines.
+        And special characters: !@#$%^&*()
+        Unicode: αβγδε
+    )";
+
+    // Тест записи файла
+    EXPECT_NO_THROW(FileUtils::writeFile(testFilePath, testContent));
+
+    // Проверяем, что файл существует
+    EXPECT_TRUE(FileUtils::fileExists(testFilePath));
+
+    // Тест чтения файла
+    std::string readContent;
+    EXPECT_NO_THROW(readContent = FileUtils::readFile(testFilePath));
+
+    // Проверяем, что содержимое совпадает
+    EXPECT_EQ(readContent, testContent);
+}
+
+/**
+ * @brief Тест чтения несуществующего файла
+ */
+TEST_F(FileUtilsTest, ReadNonExistentFileTest) {
+    std::string nonExistentFile = (testDir / "non_existent.txt").string();
+    
+    EXPECT_THROW(FileUtils::readFile(nonExistentFile), std::runtime_error);
+}
+
+/**
+ * @brief Тест записи в недоступную директорию
+ */
+TEST_F(FileUtilsTest, WriteToInaccessibleDirectoryTest) {
+    // Пытаемся записать в несуществующую директорию
+    std::string inaccessiblePath = (testDir / "non_existent_dir" / "file.txt").string();
+    
+    EXPECT_THROW(FileUtils::writeFile(inaccessiblePath, "test content"), std::runtime_error);
+}
+
+/**
+ * @brief Тест поиска файлов с расширением
+ */
+TEST_F(FileUtilsTest, FindFilesWithExtensionTest) {
+    // Создаем тестовые файлы
+    std::vector<std::string> testFiles = {
+        "test1.hpp", "test2.cpp", "test3.hpp", "test4.h", 
+        "readme.txt", "config.hpp", "implementation.cpp"
+    };
+
+    for (const auto& fileName : testFiles) {
+        std::string filePath = (testDir / fileName).string();
+        FileUtils::writeFile(filePath, "// Test content");
+    }
+
+    // Создаем поддиректорию с дополнительными файлами
+    std::filesystem::path subdir = testDir / "subdir";
+    std::filesystem::create_directories(subdir);
+    
+    std::vector<std::string> subdirFiles = {
+        "subtest1.hpp", "subtest2.cpp", "subtest3.h"
+    };
+
+    for (const auto& fileName : subdirFiles) {
+        std::string filePath = (subdir / fileName).string();
+        FileUtils::writeFile(filePath, "// Subdir test content");
+    }
+
+    // Тест поиска .hpp файлов (рекурсивно)
+    auto hppFiles = FileUtils::findFilesWithExtension(testDir.string(), ".hpp", true);
+    EXPECT_EQ(hppFiles.size(), 4); // test1.hpp, test3.hpp, config.hpp, subtest1.hpp
+
+    // Тест поиска .cpp файлов (рекурсивно)
+    auto cppFiles = FileUtils::findFilesWithExtension(testDir.string(), ".cpp", true);
+    EXPECT_EQ(cppFiles.size(), 3); // test2.cpp, implementation.cpp, subtest2.cpp
+
+    // Тест поиска .h файлов (рекурсивно)
+    auto hFiles = FileUtils::findFilesWithExtension(testDir.string(), ".h", true);
+    EXPECT_EQ(hFiles.size(), 2); // test4.h, subtest3.h
+
+    // Тест поиска .hpp файлов (не рекурсивно)
+    auto hppFilesNonRecursive = FileUtils::findFilesWithExtension(testDir.string(), ".hpp", false);
+    EXPECT_EQ(hppFilesNonRecursive.size(), 3); // test1.hpp, test3.hpp, config.hpp
+
+    // Проверяем, что возвращаются правильные пути
+    for (const auto& file : hppFiles) {
+        EXPECT_TRUE(file.size() >= 4 && file.substr(file.size() - 4) == ".hpp");
+        EXPECT_TRUE(FileUtils::fileExists(file));
+    }
+}
+
+/**
+ * @brief Тест поиска файлов в пустой директории
+ */
+TEST_F(FileUtilsTest, FindFilesInEmptyDirectoryTest) {
+    std::filesystem::path emptyDir = testDir / "empty";
+    std::filesystem::create_directories(emptyDir);
+
+    auto files = FileUtils::findFilesWithExtension(emptyDir.string(), ".hpp");
+    EXPECT_TRUE(files.empty());
+}
+
+/**
+ * @brief Тест поиска файлов в несуществующей директории
+ */
+TEST_F(FileUtilsTest, FindFilesInNonExistentDirectoryTest) {
+    std::string nonExistentDir = (testDir / "non_existent").string();
+    EXPECT_THROW(
+        FileUtils::findFilesWithExtension(nonExistentDir, ".hpp"),
+        std::filesystem::filesystem_error
+    );
+}
+
+/**
+ * @brief Тест проверки существования файла
+ */
+TEST_F(FileUtilsTest, FileExistsTest) {
+    std::string existingFile = (testDir / "existing.txt").string();
+    std::string nonExistentFile = (testDir / "non_existent.txt").string();
+
+    // Создаем файл
+    FileUtils::writeFile(existingFile, "test");
+
+    EXPECT_TRUE(FileUtils::fileExists(existingFile));
+    EXPECT_FALSE(FileUtils::fileExists(nonExistentFile));
+    
+    // Тест с директорией
+    EXPECT_TRUE(FileUtils::fileExists(testDir.string()));
+}
+
+/**
+ * @brief Тест создания директорий
+ */
+TEST_F(FileUtilsTest, CreateDirectoriesTest) {
+    std::filesystem::path deepPath = testDir / "level1" / "level2" / "level3";
+    std::string deepPathStr = deepPath.string();
+
+    // Директория не должна существовать
+    EXPECT_FALSE(std::filesystem::exists(deepPath));
+
+    // Создаем директории
+    EXPECT_NO_THROW(FileUtils::createDirectories(deepPathStr));
+
+    // Проверяем, что директория создана
+    EXPECT_TRUE(std::filesystem::exists(deepPath));
+    EXPECT_TRUE(std::filesystem::is_directory(deepPath));
+}
+
+/**
+ * @brief Тест создания уже существующих директорий
+ */
+TEST_F(FileUtilsTest, CreateExistingDirectoriesTest) {
+    // Пытаемся создать уже существующую директорию
+    EXPECT_NO_THROW(FileUtils::createDirectories(testDir.string()));
+    
+    // Директория должна по-прежнему существовать
+    EXPECT_TRUE(std::filesystem::exists(testDir));
+}
+
+/**
+ * @brief Тест извлечения имени файла
+ */
+TEST_F(FileUtilsTest, GetFileNameTest) {
+    EXPECT_EQ(FileUtils::getFileName("/path/to/file.txt"), "file.txt");
+    EXPECT_EQ(FileUtils::getFileName("C:\\Windows\\System32\\file.exe"), "file.exe");
+    EXPECT_EQ(FileUtils::getFileName("simple_file.hpp"), "simple_file.hpp");
+    EXPECT_EQ(FileUtils::getFileName("/path/to/directory/"), "");
+    EXPECT_EQ(FileUtils::getFileName(""), "");
+    EXPECT_EQ(FileUtils::getFileName("file_without_extension"), "file_without_extension");
+}
+
+/**
+ * @brief Тест извлечения расширения файла
+ */
+TEST_F(FileUtilsTest, GetFileExtensionTest) {
+    EXPECT_EQ(FileUtils::getFileExtension("file.txt"), ".txt");
+    EXPECT_EQ(FileUtils::getFileExtension("archive.tar.gz"), ".gz");
+    EXPECT_EQ(FileUtils::getFileExtension("file.HPP"), ".HPP");
+    EXPECT_EQ(FileUtils::getFileExtension("file_without_extension"), "");
+    EXPECT_EQ(FileUtils::getFileExtension(""), "");
+    EXPECT_EQ(FileUtils::getFileExtension(".hidden_file"), "");
+    EXPECT_EQ(FileUtils::getFileExtension("path/to/.hidden_file.txt"), ".txt");
+}
+
+/**
+ * @brief Тест работы с пустыми файлами
+ */
+TEST_F(FileUtilsTest, EmptyFileTest) {
+    std::string emptyFilePath = (testDir / "empty.txt").string();
+
+    // Записываем пустое содержимое
+    FileUtils::writeFile(emptyFilePath, "");
+
+    // Проверяем, что файл существует
+    EXPECT_TRUE(FileUtils::fileExists(emptyFilePath));
+
+    // Читаем пустое содержимое
+    std::string content = FileUtils::readFile(emptyFilePath);
+    EXPECT_TRUE(content.empty());
+}
+
+/**
+ * @brief Тест работы с большими файлами
+ */
+TEST_F(FileUtilsTest, LargeFileTest) {
+    std::string largeFilePath = (testDir / "large.txt").string();
+
+    // Создаем содержимое размером около 1MB
+    std::string largeContent;
+    largeContent.reserve(1024 * 1024);
+    for (int i = 0; i < 10240; ++i) {
+        largeContent += "This is line " + std::to_string(i) + " with some additional content to make it longer.\n";
+    }
+
+    // Записываем большой файл
+    EXPECT_NO_THROW(FileUtils::writeFile(largeFilePath, largeContent));
+
+    // Читаем большой файл
+    std::string readContent;
+    EXPECT_NO_THROW(readContent = FileUtils::readFile(largeFilePath));
+
+    // Проверяем, что содержимое совпадает
+    EXPECT_EQ(readContent, largeContent);
+    EXPECT_GT(readContent.size(), 500000); // Проверяем, что файл действительно большой
+}
+
+/**
+ * @brief Тест работы с бинарными файлами
+ */
+TEST_F(FileUtilsTest, BinaryFileTest) {
+    std::string binaryFilePath = (testDir / "binary.bin").string();
+
+    // Создаем бинарное содержимое
+    std::string binaryContent;
+    for (int i = 0; i < 256; ++i) {
+        binaryContent.push_back(static_cast<char>(i));
+    }
+
+    // Записываем бинарный файл
+    EXPECT_NO_THROW(FileUtils::writeFile(binaryFilePath, binaryContent));
+
+    // Читаем бинарный файл
+    std::string readContent = FileUtils::readFile(binaryFilePath);
+
+    // Проверяем, что содержимое совпадает
+    EXPECT_EQ(readContent.size(), 256);
+    for (int i = 0; i < 256; ++i) {
+        EXPECT_EQ(static_cast<unsigned char>(readContent[i]), i);
+    }
+}
+
+/**
+ * @brief Тест работы с файлами, содержащими Unicode
+ */
+TEST_F(FileUtilsTest, UnicodeFileTest) {
+    std::string unicodeFilePath = (testDir / "unicode.txt").string();
+    std::string unicodeContent = u8"Hello, 世界! Привет, мир! Здравей, свят! αβγδε 🚀🌟💫";
+
+    // Записываем Unicode содержимое
+    EXPECT_NO_THROW(FileUtils::writeFile(unicodeFilePath, unicodeContent));
+
+    // Читаем Unicode содержимое
+    std::string readContent = FileUtils::readFile(unicodeFilePath);
+
+    // Проверяем, что содержимое совпадает
+    EXPECT_EQ(readContent, unicodeContent);
+}
+
+/**
+ * @brief Тест производительности файловых операций
+ */
+TEST_F(FileUtilsTest, PerformanceTest) {
+    const int fileCount = 100;
+    std::vector<std::string> filePaths;
+
+    // Создаем много файлов
+    auto startWrite = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < fileCount; ++i) {
+        std::string filePath = (testDir / ("perf_test_" + std::to_string(i) + ".txt")).string();
+        std::string content = "Performance test content for file " + std::to_string(i);
+        
+        FileUtils::writeFile(filePath, content);
+        filePaths.push_back(filePath);
+    }
+
+    auto endWrite = std::chrono::high_resolution_clock::now();
+
+    // Читаем все файлы
+    auto startRead = std::chrono::high_resolution_clock::now();
+
+    for (const auto& filePath : filePaths) {
+        std::string content = FileUtils::readFile(filePath);
+        EXPECT_FALSE(content.empty());
+    }
+
+    auto endRead = std::chrono::high_resolution_clock::now();
+
+    // Измеряем время операций
+    auto writeDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endWrite - startWrite);
+    auto readDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endRead - startRead);
+
+    std::cout << "Performance test results:" << std::endl;
+    std::cout << "  Writing " << fileCount << " files: " << writeDuration.count() << "ms" << std::endl;
+    std::cout << "  Reading " << fileCount << " files: " << readDuration.count() << "ms" << std::endl;
+
+    // Операции не должны занимать слишком много времени
+    EXPECT_LT(writeDuration.count(), 5000); // Менее 5 секунд
+    EXPECT_LT(readDuration.count(), 5000);  // Менее 5 секунд
+}
+===== adapter-generator/tests/TestIntegration.cpp ====
+/**
+ * @file TestIntegration.cpp
+ * @brief Интеграционные тесты для генератора адаптеров
+ * @author Anton Tobolkin  
+ * @version 1.0
+ */
+
+#include <gtest/gtest.h>
+#include <fstream>
+#include <filesystem>
+#include "../include/parsers/SimpleInterfaceParser.hpp"
+#include "../include/generators/AdapterCodeGenerator.hpp"
+#include "../include/utils/FileUtils.hpp"
+
+/**
+ * @brief Интеграционные тесты полного pipeline генерации адаптеров
+ */
+class IntegrationTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        parser = std::make_unique<SimpleInterfaceParser>();
+        generator = std::make_unique<AdapterCodeGenerator>();
+        
+        // Создаем временную директорию для тестов
+        testDir = std::filesystem::temp_directory_path() / "adapter_generator_test";
+        std::filesystem::create_directories(testDir);
+        
+        setupTestFiles();
+    }
+
+    void TearDown() override {
+        // Очищаем временные файлы
+        std::filesystem::remove_all(testDir);
+        
+        parser.reset();
+        generator.reset();
+    }
+
+    void setupTestFiles() {
+        // Создаем тестовый интерфейс IMovable
+        std::string movableInterface = R"(
+#pragma once
+
+class IMovable {
+public:
+    virtual ~IMovable() = default;
+    virtual Vector getPosition() const = 0;
+    virtual void setPosition(const Vector& newPosition) = 0;
+    virtual Vector getVelocity() const = 0;
+};
+        )";
+        
+        FileUtils::writeFile(testDir / "IMovable.hpp", movableInterface);
+        
+        // Создаем тестовый интерфейс IRotatable
+        std::string rotatableInterface = R"(
+#pragma once
+
+namespace SpaceShip::Operations {
+    class IRotatable {
+    public:
+        virtual ~IRotatable() = default;
+        virtual int getDirection() const = 0;
+        virtual void setDirection(int direction) = 0;
+        virtual int getAngularVelocity() const = 0;
+        virtual int getDirectionsNumber() const = 0;
+    };
+}
+        )";
+        
+        FileUtils::writeFile(testDir / "IRotatable.hpp", rotatableInterface);
+        
+        // Создаем интерфейс с void методами
+        std::string finishableInterface = R"(
+#pragma once
+
+class IFinishable {
+public:
+    virtual ~IFinishable() = default;
+    
+    /**
+     * @brief Финализирует операцию
+     */
+    virtual void finish() = 0;
+    
+    /**
+     * @brief Сбрасывает состояние
+     */
+    virtual void reset() = 0;
+    
+    /**
+     * @brief Очищает ресурсы
+     */
+    virtual void cleanup() = 0;
+};
+        )";
+        
+        FileUtils::writeFile(testDir / "IFinishable.hpp", finishableInterface);
+        
+        // Создаем интерфейс с кастомными реализациями
+        std::string complexInterface = R"(
+#pragma once
+
+class IComplexMovable {
+public:
+    virtual ~IComplexMovable() = default;
+    virtual Vector getPosition() const = 0;
+    virtual void setPosition(const Vector& newPosition) = 0;
+    
+    /**
+     * @brief Получает скорость с учетом физики
+     * @custom_impl MovableImplementations::calculatePhysicsVelocity
+     */
+    virtual Vector getVelocity() const = 0;
+    
+    /**
+     * @brief Сложный расчет ускорения
+     * @custom_impl MovableImplementations::calculateAcceleration
+     */
+    virtual Vector getAcceleration() const = 0;
+};
+        )";
+        
+        FileUtils::writeFile(testDir / "IComplexMovable.hpp", complexInterface);
+    }
+
+    std::unique_ptr<SimpleInterfaceParser> parser;
+    std::unique_ptr<AdapterCodeGenerator> generator;
+    std::filesystem::path testDir;
+};
+
+/**
+ * @brief Тест полного pipeline: файл -> парсинг -> генерация -> сохранение
+ */
+TEST_F(IntegrationTest, FullPipelineTest) {
+    // 1. Находим все интерфейсные файлы
+    auto interfaceFiles = FileUtils::findFilesWithExtension(testDir.string(), ".hpp");
+    EXPECT_EQ(interfaceFiles.size(), 4);
+    
+    // 2. Парсим все файлы
+    std::vector<InterfaceInfo> allInterfaces;
+    for (const auto& file : interfaceFiles) {
+        auto interfaces = parser->parseFile(file);
+        allInterfaces.insert(allInterfaces.end(), interfaces.begin(), interfaces.end());
+    }
+    
+    // Проверяем, что найдены все интерфейсы
+    EXPECT_EQ(allInterfaces.size(), 4);
+    
+    // Находим конкретные интерфейсы
+    auto movable = std::find_if(allInterfaces.begin(), allInterfaces.end(),
+        [](const InterfaceInfo& info) { return info.className == "IMovable"; });
+    auto rotatable = std::find_if(allInterfaces.begin(), allInterfaces.end(),
+        [](const InterfaceInfo& info) { return info.className == "IRotatable"; });
+    auto finishable = std::find_if(allInterfaces.begin(), allInterfaces.end(),
+        [](const InterfaceInfo& info) { return info.className == "IFinishable"; });
+    auto complex = std::find_if(allInterfaces.begin(), allInterfaces.end(),
+        [](const InterfaceInfo& info) { return info.className == "IComplexMovable"; });
+    
+    ASSERT_NE(movable, allInterfaces.end());
+    ASSERT_NE(rotatable, allInterfaces.end());
+    ASSERT_NE(finishable, allInterfaces.end());
+    ASSERT_NE(complex, allInterfaces.end());
+    
+    // Проверяем правильность парсинга
+    EXPECT_EQ(movable->methods.size(), 3);
+    EXPECT_EQ(rotatable->methods.size(), 4);
+    EXPECT_EQ(rotatable->namespaceName, "SpaceShip::Operations");
+    EXPECT_EQ(finishable->methods.size(), 3);
+    EXPECT_EQ(complex->methods.size(), 4);
+    
+    // 3. Генерируем код адаптеров
+    std::string outputDir = (testDir / "generated").string();
+    FileUtils::createDirectories(outputDir);
+    
+    // Генерируем индивидуальные адаптеры
+    for (const auto& interface : allInterfaces) {
+        std::string adapterCode = generator->generateAdapter(interface);
+        EXPECT_FALSE(adapterCode.empty());
+        
+        std::string filename = interface.getAdapterName() + ".hpp";
+        FileUtils::writeFile(outputDir + "/" + filename, adapterCode);
+        
+        // Проверяем, что файл создан
+        EXPECT_TRUE(FileUtils::fileExists(outputDir + "/" + filename));
+    }
+    
+    // 4. Генерируем код регистрации
+    std::string registrationCode = generator->generateRegistrationCode(allInterfaces);
+    FileUtils::writeFile(outputDir + "/AdapterRegistry.hpp", registrationCode);
+    
+    EXPECT_TRUE(FileUtils::fileExists(outputDir + "/AdapterRegistry.hpp"));
+    
+    // 5. Проверяем содержимое сгенерированных файлов
+    std::string movableAdapter = FileUtils::readFile(outputDir + "/MovableAdapter.hpp");
+    EXPECT_NE(movableAdapter.find("class MovableAdapter"), std::string::npos);
+    EXPECT_NE(movableAdapter.find("public IMovable"), std::string::npos);
+    
+    std::string rotatableAdapter = FileUtils::readFile(outputDir + "/RotatableAdapter.hpp");
+    EXPECT_NE(rotatableAdapter.find("public SpaceShip::Operations::IRotatable"), std::string::npos);
+    
+    std::string registryContent = FileUtils::readFile(outputDir + "/AdapterRegistry.hpp");
+    EXPECT_NE(registryContent.find("class AdapterRegistry"), std::string::npos);
+    EXPECT_NE(registryContent.find("\"Adapter:IMovable\""), std::string::npos);
+    EXPECT_NE(registryContent.find("\"Adapter:SpaceShip::Operations::IRotatable\""), std::string::npos);
+}
+
+/**
+ * @brief Тест генерации адаптеров с различными типами методов
+ */
+TEST_F(IntegrationTest, MethodTypeHandlingTest) {
+    // Парсим интерфейс IComplexMovable
+    auto interfaces = parser->parseFile((testDir / "IComplexMovable.hpp").string());
+    ASSERT_EQ(interfaces.size(), 1);
+    
+    const auto& interface = interfaces[0];
+    ASSERT_EQ(interface.methods.size(), 4);
+    
+    // Проверяем типы методов
+    bool hasGetter = false, hasSetter = false, hasCustom = false;
+    
+    for (const auto& method : interface.methods) {
+        if (method.isGetter()) hasGetter = true;
+        if (method.isSetter()) hasSetter = true;
+        if (method.hasCustomImplementation()) hasCustom = true;
+    }
+    
+    EXPECT_TRUE(hasGetter);
+    EXPECT_TRUE(hasSetter);
+    EXPECT_TRUE(hasCustom);
+    
+    // Генерируем код и проверяем обработку различных типов
+    std::string adapterCode = generator->generateAdapter(interface);
+    
+    // Getter методы должны использовать IoC::resolve<ReturnType>
+    EXPECT_NE(adapterCode.find("IoC::resolve<Vector>(\"IComplexMovable:Position.get\""), std::string::npos);
+    
+    // Setter методы должны вызывать execute()
+    EXPECT_NE(adapterCode.find("IoC::resolve<ICommand>(\"IComplexMovable:Position.set\""), std::string::npos);
+    EXPECT_NE(adapterCode.find("->execute()"), std::string::npos);
+    
+    // Кастомные методы должны использовать статические вызовы
+    EXPECT_NE(adapterCode.find("MovableImplementations::calculatePhysicsVelocity"), std::string::npos);
+    EXPECT_NE(adapterCode.find("MovableImplementations::calculateAcceleration"), std::string::npos);
+}
+
+/**
+ * @brief Тест обработки void методов
+ */
+TEST_F(IntegrationTest, VoidMethodsTest) {
+    // Парсим интерфейс IFinishable
+    auto interfaces = parser->parseFile((testDir / "IFinishable.hpp").string());
+    ASSERT_EQ(interfaces.size(), 1);
+    
+    const auto& interface = interfaces[0];
+    ASSERT_EQ(interface.methods.size(), 3);
+    
+    // Все методы должны быть void методами
+    for (const auto& method : interface.methods) {
+        EXPECT_TRUE(method.isVoidMethod());
+        EXPECT_EQ(method.returnType, "void");
+        EXPECT_TRUE(method.parameters.empty());
+    }
+    
+    // Генерируем код и проверяем обработку void методов
+    std::string adapterCode = generator->generateAdapter(interface);
+    
+    // Void методы должны вызывать IoC::resolve(...)
+    EXPECT_NE(adapterCode.find("IoC::resolve<ICommand>(\"IFinishable:finish\","), std::string::npos);
+    EXPECT_NE(adapterCode.find("IoC::resolve<ICommand>(\"IFinishable:reset\","), std::string::npos);
+    EXPECT_NE(adapterCode.find("IoC::resolve<ICommand>(\"IFinishable:cleanup\","), std::string::npos);
+    
+    // Методы должны иметь корректные сигнатуры
+    EXPECT_NE(adapterCode.find("void finish() override"), std::string::npos);
+    EXPECT_NE(adapterCode.find("void reset() override"), std::string::npos);
+    EXPECT_NE(adapterCode.find("void cleanup() override"), std::string::npos);
+}
+
+/**
+ * @brief Тест стратегии регистрации в IoC контейнере
+ */
+TEST_F(IntegrationTest, IoCRegistrationStrategyTest) {
+    // Парсим все интерфейсы
+    auto interfaceFiles = FileUtils::findFilesWithExtension(testDir.string(), ".hpp");
+    std::vector<InterfaceInfo> allInterfaces;
+    
+    for (const auto& file : interfaceFiles) {
+        auto interfaces = parser->parseFile(file);
+        allInterfaces.insert(allInterfaces.end(), interfaces.begin(), interfaces.end());
+    }
+    
+    // Генерируем код регистрации
+    std::string registrationCode = generator->generateRegistrationCode(allInterfaces);
+    
+    // Проверяем стратегию регистрации:
+    
+    // 1. Должна быть основная функция регистрации
+    EXPECT_NE(registrationCode.find("class AdapterRegistry"), std::string::npos);
+    EXPECT_NE(registrationCode.find("static void registerAll()"), std::string::npos);
+    
+    // 2. Каждый адаптер должен быть зарегистрирован с уникальным ключом
+    EXPECT_NE(registrationCode.find("\"Adapter:IMovable\""), std::string::npos);
+    EXPECT_NE(registrationCode.find("\"Adapter:SpaceShip::Operations::IRotatable\""), std::string::npos);
+    EXPECT_NE(registrationCode.find("\"Adapter:IFinishable\""), std::string::npos);
+    EXPECT_NE(registrationCode.find("\"Adapter:IComplexMovable\""), std::string::npos);
+    
+    // 3. Должны быть фабричные методы
+    EXPECT_NE(registrationCode.find("registerAdapter<IMovable, MovableAdapter>"), std::string::npos);
+    EXPECT_NE(registrationCode.find("registerAdapter<SpaceShip::Operations::IRotatable, RotatableAdapter>"), std::string::npos);
+    EXPECT_NE(registrationCode.find("registerAdapter<IFinishable, FinishableAdapter>"), std::string::npos);
+    EXPECT_NE(registrationCode.find("registerAdapter<IComplexMovable, ComplexMovableAdapter>"), std::string::npos);
+    
+    // 4. Все регистрации должны использовать IoC::resolve<ICommand>("IoC.Register", ...)
+    EXPECT_NE(registrationCode.find("IoC::resolve<ICommand>(\"IoC.Register\""), std::string::npos);
+}
+
+/**
+ * @brief Тест обработки ошибок и граничных случаев
+ */
+TEST_F(IntegrationTest, ErrorHandlingTest) {
+    // Тест с несуществующим файлом
+    EXPECT_THROW(parser->parseFile("non_existent_file.hpp"), std::runtime_error);
+    
+    // Тест с пустым файлом
+    std::string emptyFile = (testDir / "empty.hpp").string();
+    FileUtils::writeFile(emptyFile, "");
+    
+    auto interfaces = parser->parseFile(emptyFile);
+    EXPECT_TRUE(interfaces.empty());
+    
+    // Тест с файлом без интерфейсов
+    std::string noInterfaceFile = (testDir / "no_interface.hpp").string();
+    FileUtils::writeFile(noInterfaceFile, R"(
+        class RegularClass {
+        public:
+            void method() {}
+        };
+    )");
+    
+    interfaces = parser->parseFile(noInterfaceFile);
+    EXPECT_TRUE(interfaces.empty());
+}
+
+/**
+ * @brief Тест производительности обработки большого количества файлов
+ */
+TEST_F(IntegrationTest, PerformanceTest) {
+    // Создаем множество интерфейсов
+    const int interfaceCount = 50;
+    std::vector<std::string> createdFiles;
+    
+    for (int i = 0; i < interfaceCount; ++i) {
+        std::string interfaceContent = R"(
+#pragma once
+
+class ITestInterface)" + std::to_string(i) + R"( {
+public:
+    virtual ~ITestInterface)" + std::to_string(i) + R"(() = default;
+    virtual int getValue)" + std::to_string(i) + R"(() const = 0;
+    virtual void setValue)" + std::to_string(i) + R"((int value) = 0;
+    virtual void process)" + std::to_string(i) + R"(() = 0;
+};
+        )";
+        
+        std::string filename = "ITestInterface" + std::to_string(i) + ".hpp";
+        std::string filepath = (testDir / filename).string();
+        FileUtils::writeFile(filepath, interfaceContent);
+        createdFiles.push_back(filepath);
+    }
+    
+    // Измеряем время парсинга
+    auto startParsing = std::chrono::high_resolution_clock::now();
+    
+    std::vector<InterfaceInfo> allInterfaces;
+    for (const auto& file : createdFiles) {
+        auto interfaces = parser->parseFile(file);
+        allInterfaces.insert(allInterfaces.end(), interfaces.begin(), interfaces.end());
+    }
+    
+    auto endParsing = std::chrono::high_resolution_clock::now();
+    auto parsingDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endParsing - startParsing);
+    
+    EXPECT_EQ(allInterfaces.size(), interfaceCount);
+    
+    // Измеряем время генерации
+    auto startGeneration = std::chrono::high_resolution_clock::now();
+    
+    std::string registrationCode = generator->generateRegistrationCode(allInterfaces);
+    
+    for (const auto& interface : allInterfaces) {
+        std::string adapterCode = generator->generateAdapter(interface);
+        EXPECT_FALSE(adapterCode.empty());
+    }
+    
+    auto endGeneration = std::chrono::high_resolution_clock::now();
+    auto generationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endGeneration - startGeneration);
+    
+    // Проверяем производительность (не более 5 секунд на 50 интерфейсов)
+    EXPECT_LT(parsingDuration.count(), 5000);
+    EXPECT_LT(generationDuration.count(), 5000);
+    
+    std::cout << "Performance test results:" << std::endl;
+    std::cout << "  Parsing " << interfaceCount << " interfaces: " << parsingDuration.count() << "ms" << std::endl;
+    std::cout << "  Generating " << interfaceCount << " adapters: " << generationDuration.count() << "ms" << std::endl;
+}
+===== adapter-generator/tests/TestMethodInfo.cpp ====
+/**
+ * @file TestMethodInfo.cpp
+ * @brief Unit-тесты для структуры MethodInfo
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#include <gtest/gtest.h>
+#include "../include/models/MethodInfo.hpp"
+
+/**
+ * @brief Тестовый класс для MethodInfo
+ */
+class MethodInfoTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        // Настройка базового метода для тестов
+        baseMethod.name = "testMethod";
+        baseMethod.returnType = "void";
+        baseMethod.isConst = false;
+        baseMethod.isPureVirtual = true;
+    }
+
+    MethodInfo baseMethod;
+};
+
+/**
+ * @brief Тест определения getter методов
+ */
+TEST_F(MethodInfoTest, IsGetterTest) {
+    // Тестируем различные getter методы
+    MethodInfo getPosition;
+    getPosition.name = "getPosition";
+    getPosition.returnType = "Vector";
+    getPosition.isConst = true;
+    EXPECT_TRUE(getPosition.isGetter());
+    
+    MethodInfo getValue;
+    getValue.name = "getValue";
+    getValue.returnType = "int";
+    EXPECT_TRUE(getValue.isGetter());
+    
+    MethodInfo getComplexType;
+    getComplexType.name = "getComplexType";
+    getComplexType.returnType = "std::shared_ptr<Object>";
+    EXPECT_TRUE(getComplexType.isGetter());
+    
+    // Не getter методы
+    MethodInfo setPosition;
+    setPosition.name = "setPosition";
+    setPosition.returnType = "void";
+    EXPECT_FALSE(setPosition.isGetter());
+    
+    MethodInfo regularMethod;
+    regularMethod.name = "calculateSomething";
+    regularMethod.returnType = "int";
+    EXPECT_FALSE(regularMethod.isGetter());
+}
+
+/**
+ * @brief Тест определения setter методов
+ */
+TEST_F(MethodInfoTest, IsSetterTest) {
+    // Тестируем различные setter методы
+    MethodInfo setPosition;
+    setPosition.name = "setPosition";
+    setPosition.returnType = "void";
+    setPosition.parameters = {"const Vector& pos"};
+    EXPECT_TRUE(setPosition.isSetter());
+    
+    MethodInfo setValue;
+    setValue.name = "setValue";
+    setValue.returnType = "void";
+    setValue.parameters = {"int value"};
+    EXPECT_TRUE(setValue.isSetter());
+    
+    MethodInfo setComplexType;
+    setComplexType.name = "setComplexType";
+    setComplexType.returnType = "void";
+    setComplexType.parameters = {"const std::shared_ptr<Object>& obj"};
+    EXPECT_TRUE(setComplexType.isSetter());
+    
+    // Не setter методы
+    MethodInfo getPosition;
+    getPosition.name = "getPosition";
+    getPosition.returnType = "Vector";
+    EXPECT_FALSE(getPosition.isSetter());
+    
+    MethodInfo setWithoutParams;
+    setWithoutParams.name = "setPosition";
+    setWithoutParams.returnType = "void";
+    // Нет параметров
+    EXPECT_FALSE(setWithoutParams.isSetter());
+    
+    MethodInfo setWithTwoParams;
+    setWithTwoParams.name = "setPosition";
+    setWithTwoParams.returnType = "void";
+    setWithTwoParams.parameters = {"int x", "int y"};
+    EXPECT_FALSE(setWithTwoParams.isSetter());
+    
+    MethodInfo setWithNonVoidReturn;
+    setWithNonVoidReturn.name = "setPosition";
+    setWithNonVoidReturn.returnType = "bool";
+    setWithNonVoidReturn.parameters = {"const Vector& pos"};
+    EXPECT_FALSE(setWithNonVoidReturn.isSetter());
+}
+
+/**
+ * @brief Тест определения void методов
+ */
+TEST_F(MethodInfoTest, IsVoidMethodTest) {
+    // Void методы без параметров
+    MethodInfo finish;
+    finish.name = "finish";
+    finish.returnType = "void";
+    EXPECT_TRUE(finish.isVoidMethod());
+    
+    MethodInfo reset;
+    reset.name = "reset";
+    reset.returnType = "void";
+    EXPECT_TRUE(reset.isVoidMethod());
+    
+    MethodInfo cleanup;
+    cleanup.name = "cleanup";
+    cleanup.returnType = "void";
+    EXPECT_TRUE(cleanup.isVoidMethod());
+    
+    // Не void методы
+    MethodInfo getPosition;
+    getPosition.name = "getPosition";
+    getPosition.returnType = "Vector";
+    EXPECT_FALSE(getPosition.isVoidMethod());
+    
+    MethodInfo voidWithParams;
+    voidWithParams.name = "setPosition";
+    voidWithParams.returnType = "void";
+    voidWithParams.parameters = {"const Vector& pos"};
+    EXPECT_FALSE(voidWithParams.isVoidMethod());
+}
+
+/**
+ * @brief Тест извлечения имени свойства из имени метода
+ */
+TEST_F(MethodInfoTest, GetPropertyNameTest) {
+    // Getter методы
+    MethodInfo getPosition;
+    getPosition.name = "getPosition";
+    EXPECT_EQ(getPosition.getPropertyName(), "Position");
+    
+    MethodInfo getValue;
+    getValue.name = "getValue";
+    EXPECT_EQ(getValue.getPropertyName(), "Value");
+    
+    MethodInfo getAngularVelocity;
+    getAngularVelocity.name = "getAngularVelocity";  
+    EXPECT_EQ(getAngularVelocity.getPropertyName(), "AngularVelocity");
+    
+    // Setter методы
+    MethodInfo setPosition;
+    setPosition.name = "setPosition";
+    EXPECT_EQ(setPosition.getPropertyName(), "Position");
+    
+    MethodInfo setValue;
+    setValue.name = "setValue";
+    EXPECT_EQ(setValue.getPropertyName(), "Value");
+    
+    // Обычные методы (возвращают исходное имя)
+    MethodInfo finish;
+    finish.name = "finish";
+    EXPECT_EQ(finish.getPropertyName(), "finish");
+    
+    MethodInfo calculateSomething;
+    calculateSomething.name = "calculateSomething";
+    EXPECT_EQ(calculateSomething.getPropertyName(), "calculateSomething");
+}
+
+/**
+ * @brief Тест работы с кастомными реализациями
+ */
+TEST_F(MethodInfoTest, CustomImplementationTest) {
+    MethodInfo method;
+    method.name = "getVelocity";
+    method.returnType = "Vector";
+    
+    // Изначально кастомной реализации нет
+    EXPECT_FALSE(method.hasCustomImplementation());
+    
+    // Устанавливаем кастомную реализацию
+    method.customImpl.hasCustom = true;
+    method.customImpl.className = "MovableImplementations";
+    method.customImpl.methodName = "calculateVelocity";
+    method.customImpl.fullReference = "MovableImplementations::calculateVelocity";
+    
+    EXPECT_TRUE(method.hasCustomImplementation());
+    EXPECT_EQ(method.customImpl.className, "MovableImplementations");
+    EXPECT_EQ(method.customImpl.methodName, "calculateVelocity");
+    EXPECT_EQ(method.customImpl.getFullReference(), "MovableImplementations::calculateVelocity");
+}
+
+/**
+ * @brief Тест комбинированной логики определения типов методов
+ */
+TEST_F(MethodInfoTest, MethodTypeLogicTest) {
+    // Метод может быть только одного типа: getter, setter или void method
+    
+    // Getter (не setter и не void method)
+    MethodInfo getter;
+    getter.name = "getPosition";
+    getter.returnType = "Vector";
+    EXPECT_TRUE(getter.isGetter());
+    EXPECT_FALSE(getter.isSetter());
+    EXPECT_FALSE(getter.isVoidMethod());
+    
+    // Setter (не getter и не void method)
+    MethodInfo setter;
+    setter.name = "setPosition";
+    setter.returnType = "void";
+    setter.parameters = {"const Vector& pos"};
+    EXPECT_FALSE(setter.isGetter());
+    EXPECT_TRUE(setter.isSetter());
+    EXPECT_FALSE(setter.isVoidMethod());
+    
+    // Void method (не getter и не setter)
+    MethodInfo voidMethod;
+    voidMethod.name = "finish";
+    voidMethod.returnType = "void";
+    EXPECT_FALSE(voidMethod.isGetter());
+    EXPECT_FALSE(voidMethod.isSetter());
+    EXPECT_TRUE(voidMethod.isVoidMethod());
+    
+    // Обычный метод (не getter, не setter, не void method)
+    MethodInfo regularMethod;
+    regularMethod.name = "calculateDistance";
+    regularMethod.returnType = "double";
+    regularMethod.parameters = {"const Vector& from", "const Vector& to"};
+    EXPECT_FALSE(regularMethod.isGetter());
+    EXPECT_FALSE(regularMethod.isSetter());
+    EXPECT_FALSE(regularMethod.isVoidMethod());
+}
+
+/**
+ * @brief Тест граничных случаев с именами методов
+ */
+TEST_F(MethodInfoTest, EdgeCasesTest) {
+    // Методы с именами, начинающимися с "get" и "set", но не являющимися геттерами/сеттерами
+    
+    // "get" в середине имени - не getter
+    MethodInfo notGetter;
+    notGetter.name = "forgetPosition";
+    notGetter.returnType = "void";
+    EXPECT_FALSE(notGetter.isGetter());
+    
+    // "set" в середине имени - не setter
+    MethodInfo notSetter;
+    notSetter.name = "resetPosition";
+    notSetter.returnType = "void";
+    notSetter.parameters = {"const Vector& pos"};
+    EXPECT_FALSE(notSetter.isSetter());
+    
+    // Очень короткие имена
+    MethodInfo shortGet;
+    shortGet.name = "get";
+    shortGet.returnType = "int";
+    EXPECT_FALSE(shortGet.isGetter()); // Слишком короткое для getter
+    
+    MethodInfo shortSet;
+    shortSet.name = "set";
+    shortSet.returnType = "void";
+    shortSet.parameters = {"int value"};
+    EXPECT_FALSE(shortSet.isSetter()); // Слишком короткое для setter
+    
+    // Пустое имя
+    MethodInfo emptyName;
+    emptyName.name = "";
+    emptyName.returnType = "void";
+    EXPECT_FALSE(emptyName.isGetter());
+    EXPECT_FALSE(emptyName.isSetter());
+    EXPECT_TRUE(emptyName.isVoidMethod()); // Технически void метод без параметров
+}
+
+/**
+ * @brief Тест const модификатора
+ */
+TEST_F(MethodInfoTest, ConstModifierTest) {
+    MethodInfo constMethod;
+    constMethod.name = "getPosition";
+    constMethod.returnType = "Vector";
+    constMethod.isConst = true;
+    constMethod.isPureVirtual = true;
+    
+    EXPECT_TRUE(constMethod.isConst);
+    EXPECT_TRUE(constMethod.isGetter());
+    
+    MethodInfo nonConstMethod;
+    nonConstMethod.name = "getPosition";
+    nonConstMethod.returnType = "Vector";
+    nonConstMethod.isConst = false;
+    nonConstMethod.isPureVirtual = true;
+    
+    EXPECT_FALSE(nonConstMethod.isConst);
+    EXPECT_TRUE(nonConstMethod.isGetter()); // Все равно getter
+}
+
+/**
+ * @brief Тест чисто виртуальных методов
+ */
+TEST_F(MethodInfoTest, PureVirtualTest) {
+    MethodInfo pureVirtualMethod;
+    pureVirtualMethod.name = "testMethod";
+    pureVirtualMethod.returnType = "void";
+    pureVirtualMethod.isPureVirtual = true;
+    
+    EXPECT_TRUE(pureVirtualMethod.isPureVirtual);
+    
+    MethodInfo regularVirtualMethod;
+    regularVirtualMethod.name = "testMethod";
+    regularVirtualMethod.returnType = "void";
+    regularVirtualMethod.isPureVirtual = false;
+    
+    EXPECT_FALSE(regularVirtualMethod.isPureVirtual);
+}
+
+/**
+ * @brief Тест сложных сигнатур методов
+ */
+TEST_F(MethodInfoTest, ComplexSignaturesTest) {
+    MethodInfo complexMethod;
+    complexMethod.name = "processObjects";
+    complexMethod.returnType = "std::vector<std::shared_ptr<Result>>";
+    complexMethod.parameters = {
+        "const std::vector<std::shared_ptr<Object>>& objects",
+        "std::function<bool(const Object&)> predicate",
+        "int flags = 0"
+    };
+    complexMethod.isConst = true;
+    complexMethod.isPureVirtual = true;
+    
+    EXPECT_FALSE(complexMethod.isGetter()); // Имя не начинается с "get"
+    EXPECT_FALSE(complexMethod.isSetter()); // Не void и не начинается с "set"
+    EXPECT_FALSE(complexMethod.isVoidMethod()); // Не void возврат
+    EXPECT_EQ(complexMethod.parameters.size(), 3);
+    EXPECT_TRUE(complexMethod.isConst);
+}
+
+/**
+ * @brief Тест копирования и присваивания
+ */
+TEST_F(MethodInfoTest, CopyAssignmentTest) {
+    MethodInfo original;
+    original.name = "getPosition";
+    original.returnType = "Vector";
+    original.parameters = {"int x", "int y"};
+    original.isConst = true;
+    original.isPureVirtual = false;
+    original.customImpl.hasCustom = true;
+    original.customImpl.className = "TestClass";
+    original.customImpl.methodName = "testMethod";
+    
+    // Тест копирования
+    MethodInfo copied = original;
+    EXPECT_EQ(copied.name, original.name);
+    EXPECT_EQ(copied.returnType, original.returnType);
+    EXPECT_EQ(copied.parameters.size(), original.parameters.size());
+    EXPECT_EQ(copied.isConst, original.isConst);
+    EXPECT_EQ(copied.isPureVirtual, original.isPureVirtual);
+    EXPECT_EQ(copied.customImpl.hasCustom, original.customImpl.hasCustom);
+    EXPECT_EQ(copied.customImpl.className, original.customImpl.className);
+    
+    // Тест присваивания
+    MethodInfo assigned;
+    assigned = original;
+    EXPECT_EQ(assigned.name, original.name);
+    EXPECT_EQ(assigned.returnType, original.returnType);
+    EXPECT_EQ(assigned.parameters.size(), original.parameters.size());
+}
+===== adapter-generator/tests/TestSimpleInterfaceParser.cpp ====
+/**
+ * @file TestSimpleInterfaceParser.cpp
+ * @brief Unit-тесты для SimpleInterfaceParser
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
+#include "../include/parsers/SimpleInterfaceParser.hpp"
+#include "../include/models/InterfaceInfo.hpp"
+#include "../include/models/MethodInfo.hpp"
+#include <fstream>
+
+using ::testing::_;
+using ::testing::Return;
+using ::testing::Eq;
+
+/**
+ * @brief Тестовый класс для SimpleInterfaceParser
+ */
+class SimpleInterfaceParserTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        parser = std::make_unique<SimpleInterfaceParser>();
+    }
+
+    void TearDown() override {
+        parser.reset();
+    }
+
+    std::unique_ptr<SimpleInterfaceParser> parser;
+};
+
+/**
+ * @brief Тест парсинга простого интерфейса
+ */
+TEST_F(SimpleInterfaceParserTest, ParseSimpleInterface) {
+    std::string testInterface = R"(
+        class IMovable {
+        public:
+            virtual Vector getPosition() const = 0;
+            virtual void setPosition(const Vector& pos) = 0;
+            virtual Vector getVelocity() const = 0;
+        };
+    )";
+
+    auto interfaces = parser->parseContent(testInterface);
+
+    ASSERT_EQ(interfaces.size(), 1);
+    EXPECT_EQ(interfaces[0].className, "IMovable");
+    EXPECT_EQ(interfaces[0].methods.size(), 3);
+    
+    // Проверяем первый метод (getter)
+    const auto& getPosition = interfaces[0].methods[0];
+    EXPECT_EQ(getPosition.name, "getPosition");
+    EXPECT_EQ(getPosition.returnType, "Vector");
+    EXPECT_TRUE(getPosition.isConst);
+    EXPECT_TRUE(getPosition.isPureVirtual);
+    EXPECT_TRUE(getPosition.parameters.empty());
+    EXPECT_TRUE(getPosition.isGetter());
+    
+    // Проверяем второй метод (setter)
+    const auto& setPosition = interfaces[0].methods[1];
+    EXPECT_EQ(setPosition.name, "setPosition");
+    EXPECT_EQ(setPosition.returnType, "void");
+    EXPECT_FALSE(setPosition.isConst);
+    EXPECT_TRUE(setPosition.isPureVirtual);
+    EXPECT_EQ(setPosition.parameters.size(), 1);
+    EXPECT_TRUE(setPosition.isSetter());
+    
+    // Проверяем третий метод (getter)
+    const auto& getVelocity = interfaces[0].methods[2];
+    EXPECT_EQ(getVelocity.name, "getVelocity");
+    EXPECT_EQ(getVelocity.returnType, "Vector");
+    EXPECT_TRUE(getVelocity.isConst);
+    EXPECT_TRUE(getVelocity.isPureVirtual);
+    EXPECT_TRUE(getVelocity.parameters.empty());
+    EXPECT_TRUE(getVelocity.isGetter());
+}
+
+/**
+ * @brief Тест парсинга интерфейса с namespace
+ */
+TEST_F(SimpleInterfaceParserTest, ParseInterfaceWithNamespace) {
+    std::string testInterface = R"(
+        namespace SpaceShip::Operations {
+            class IRotatable {
+            public:
+                virtual int getDirection() const = 0;
+                virtual void setDirection(int direction) = 0;
+                virtual int getAngularVelocity() const = 0;
+            };
+        }
+    )";
+
+    auto interfaces = parser->parseContent(testInterface);
+
+    ASSERT_EQ(interfaces.size(), 1);
+    EXPECT_EQ(interfaces[0].className, "IRotatable");
+    EXPECT_EQ(interfaces[0].namespaceName, "SpaceShip::Operations");
+    EXPECT_EQ(interfaces[0].getFullName(), "SpaceShip::Operations::IRotatable");
+    EXPECT_EQ(interfaces[0].methods.size(), 3);
+}
+
+/**
+ * @brief Тест парсинга интерфейса с void методами
+ */
+TEST_F(SimpleInterfaceParserTest, ParseInterfaceWithVoidMethods) {
+    std::string testInterface = R"(
+        class IFinishable {
+        public:
+            virtual void finish() = 0;
+            virtual void reset() = 0;
+            virtual void cleanup() = 0;
+        };
+    )";
+
+    auto interfaces = parser->parseContent(testInterface);
+
+    ASSERT_EQ(interfaces.size(), 1);
+    EXPECT_EQ(interfaces[0].className, "IFinishable");
+    EXPECT_EQ(interfaces[0].methods.size(), 3);
+    
+    for (const auto& method : interfaces[0].methods) {
+        EXPECT_EQ(method.returnType, "void");
+        EXPECT_TRUE(method.parameters.empty());
+        EXPECT_TRUE(method.isVoidMethod());
+        EXPECT_FALSE(method.isGetter());
+        EXPECT_FALSE(method.isSetter());
+    }
+}
+
+/**
+ * @brief Тест парсинга интерфейса с кастомными реализациями
+ */
+TEST_F(SimpleInterfaceParserTest, ParseInterfaceWithCustomImplementations) {
+    std::string testInterface = R"(
+        class IMovable {
+        public:
+            virtual Vector getPosition() const = 0;
+            
+            /**
+             * @custom_impl MovableImplementations::complexVelocityCalculation
+             */
+            virtual Vector getVelocity() const = 0;
+            
+            virtual void setPosition(const Vector& pos) = 0;
+        };
+    )";
+
+    auto interfaces = parser->parseContent(testInterface);
+
+    ASSERT_EQ(interfaces.size(), 1);
+    EXPECT_EQ(interfaces[0].className, "IMovable");
+    EXPECT_EQ(interfaces[0].methods.size(), 3);
+    
+    // Проверяем метод без кастомной реализации
+    const auto& getPosition = interfaces[0].methods[0];
+    EXPECT_FALSE(getPosition.hasCustomImplementation());
+    
+    // Проверяем метод с кастомной реализацией
+    const auto& getVelocity = interfaces[0].methods[1];
+    EXPECT_TRUE(getVelocity.hasCustomImplementation());
+    EXPECT_EQ(getVelocity.customImpl.className, "MovableImplementations");
+    EXPECT_EQ(getVelocity.customImpl.methodName, "complexVelocityCalculation");
+    EXPECT_EQ(getVelocity.customImpl.getFullReference(), "MovableImplementations::complexVelocityCalculation");
+    
+    // Проверяем третий метод без кастомной реализации
+    const auto& setPosition = interfaces[0].methods[2];
+
+    EXPECT_FALSE(setPosition.hasCustomImplementation());
+}
+
+/**
+ * @brief Тест парсинга нескольких интерфейсов
+ */
+TEST_F(SimpleInterfaceParserTest, ParseMultipleInterfaces) {
+    std::string testContent = R"(
+        class IMovable {
+        public:
+            virtual Vector getPosition() const = 0;
+            virtual void setPosition(const Vector& pos) = 0;
+        };
+        
+        class IRotatable {
+        public:
+            virtual int getDirection() const = 0;
+            virtual void setDirection(int direction) = 0;
+        };
+        
+        // Это не чистый интерфейс - есть не виртуальные методы
+        // генерим адаптер, считается, что пользователь осознает, что ему нужны также не виртальные методы
+        class NotPureInterface {
+        public:
+            virtual void virtualMethod() = 0;
+            void regularMethod() {}
+        };
+    )";
+
+    auto interfaces = parser->parseContent(testContent);
+
+    // Должны найтись все 3 интерфейса
+    ASSERT_EQ(interfaces.size(), 3);
+    
+    // Проверяем первый интерфейс
+    EXPECT_EQ(interfaces[0].className, "IMovable");
+    EXPECT_EQ(interfaces[0].methods.size(), 2);
+    
+    // Проверяем второй интерфейс
+    EXPECT_EQ(interfaces[1].className, "IRotatable");
+    EXPECT_EQ(interfaces[1].methods.size(), 2);
+
+    // Проверяем третий интерфейс
+    EXPECT_EQ(interfaces[2].className, "NotPureInterface");
+    EXPECT_EQ(interfaces[2].methods.size(), 1);
+}
+
+/**
+ * @brief Тест парсинга методов с различными параметрами
+ */
+TEST_F(SimpleInterfaceParserTest, ParseMethodsWithDifferentParameters) {
+    std::string testInterface = R"(
+        class IComplexInterface {
+        public:
+            virtual void noParams() = 0;
+            virtual void oneParam(int value) = 0;
+            virtual void twoParams(int a, const std::string& b) = 0;
+            virtual int complexParam(const std::vector<std::shared_ptr<Object>>& objects) = 0;
+        };
+    )";
+
+    auto interfaces = parser->parseContent(testInterface);
+
+    ASSERT_EQ(interfaces.size(), 1);
+    const auto& methods = interfaces[0].methods;
+    ASSERT_EQ(methods.size(), 4);
+    
+    // Метод без параметров
+    EXPECT_EQ(methods[0].name, "noParams");
+    EXPECT_TRUE(methods[0].parameters.empty());
+    
+    // Метод с одним параметром
+    EXPECT_EQ(methods[1].name, "oneParam");
+    EXPECT_EQ(methods[1].parameters.size(), 1);
+    EXPECT_EQ(methods[1].parameters[0], "int value");
+    
+    // Метод с двумя параметрами
+    EXPECT_EQ(methods[2].name, "twoParams");
+    EXPECT_EQ(methods[2].parameters.size(), 2);
+    EXPECT_EQ(methods[2].parameters[0], "int a");
+    EXPECT_EQ(methods[2].parameters[1], "const std::string& b");
+    
+    // Метод со сложным параметром
+    EXPECT_EQ(methods[3].name, "complexParam");
+    EXPECT_EQ(methods[3].parameters.size(), 1);
+    EXPECT_EQ(methods[3].parameters[0], "const std::vector<std::shared_ptr<Object>>& objects");
+}
+
+/**
+ * @brief Тест обработки пустого содержимого
+ */
+TEST_F(SimpleInterfaceParserTest, ParseEmptyContent) {
+    std::string emptyContent = "";
+    auto interfaces = parser->parseContent(emptyContent);
+    EXPECT_TRUE(interfaces.empty());
+}
+
+/**
+ * @brief Тест обработки содержимого без интерфейсов
+ */
+TEST_F(SimpleInterfaceParserTest, ParseContentWithoutInterfaces) {
+    std::string noInterfaceContent = R"(
+        class RegularClass {
+        public:
+            void method1() {}
+            int method2() { return 0; }
+        };
+        
+        struct RegularStruct {
+            int value;
+            void setValue(int v) { value = v; }
+        };
+    )";
+
+    auto interfaces = parser->parseContent(noInterfaceContent);
+    EXPECT_TRUE(interfaces.empty());
+}
+
+/**
+ * @brief Тест обработки некорректного синтаксиса
+ */
+TEST_F(SimpleInterfaceParserTest, ParseInvalidSyntax) {
+    std::string invalidContent = R"(
+        class InvalidClass {
+        public:
+            virtual void method1() = 0
+            // Пропущена точка с запятой
+            virtual int method2() const = 0;
+        };
+    )";
+
+    // Парсер должен быть устойчив к некорректному синтаксису
+    EXPECT_NO_THROW({
+        auto interfaces = parser->parseContent(invalidContent);
+    });
+}
+
+/**
+ * @brief Тест парсинга интерфейса с комплексными типами возврата
+ */
+TEST_F(SimpleInterfaceParserTest, ParseInterfaceWithComplexReturnTypes) {
+    std::string testInterface = R"(
+        class IComplexReturns {
+        public:
+            virtual std::shared_ptr<Object> getObject() const = 0;
+            virtual const std::vector<int>& getVector() const = 0;
+            virtual std::unique_ptr<std::map<std::string, int>> getMap() const = 0;
+        };
+    )";
+
+    auto interfaces = parser->parseContent(testInterface);
+
+    ASSERT_EQ(interfaces.size(), 1);
+    const auto& methods = interfaces[0].methods;
+    ASSERT_EQ(methods.size(), 3);
+    
+    EXPECT_EQ(methods[0].returnType, "std::shared_ptr<Object>");
+    EXPECT_EQ(methods[1].returnType, "const std::vector<int>&");
+    EXPECT_EQ(methods[2].returnType, "std::unique_ptr<std::map<std::string, int>>");
+}
+
+/**
+ * @brief Интеграционный тест парсинга файла
+ */
+TEST_F(SimpleInterfaceParserTest, ParseFileIntegration) {
+    // Создаем временный файл для тестирования
+    std::string tempFileName = "test_interface.hpp";
+    std::string testContent = R"(
+        #pragma once
+        
+        namespace TestNamespace {
+            class ITestInterface {
+            public:
+                virtual ~ITestInterface() = default;
+                virtual int getValue() const = 0;
+                virtual void setValue(int value) = 0;
+            };
+        }
+    )";
+    
+    // Записываем содержимое в файл
+    std::ofstream tempFile(tempFileName);
+    tempFile << testContent;
+    tempFile.close();
+    
+    // Парсим файл
+    auto interfaces = parser->parseFile(tempFileName);
+    
+    // Проверяем результат
+    ASSERT_EQ(interfaces.size(), 1);
+    EXPECT_EQ(interfaces[0].className, "ITestInterface");
+    EXPECT_EQ(interfaces[0].namespaceName, "TestNamespace");
+    EXPECT_EQ(interfaces[0].methods.size(), 2); // Деструктор не должен парситься
+    
+    // Удаляем временный файл
+    std::remove(tempFileName.c_str());
+}
+
+/**
+ * @brief Тест парсинга файла, которого не существует
+ */
+TEST_F(SimpleInterfaceParserTest, ParseNonExistentFile) {
+    EXPECT_THROW({
+        parser->parseFile("non_existent_file.hpp");
+    }, std::runtime_error);
+}
+===== CMakeLists.txt ====
+project(hw-06-adapter VERSION 1.0.0 LANGUAGES CXX)
+
+# Подключаем подпроекты
+# Предполагается, что корневой CMakeLists.txt уже сделал add_subdirectory(hw-05-ioc)
+# и теперь мы находимся в hw-06-adapter, а hw-05-ioc собран как таргет ioc_lib.
+
+# 1) Генератор адаптеров
+add_subdirectory(adapter-generator)
+
+# Определяем пути для генерации
+set(INTERFACES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/interfaces)
+set(GENERATED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated/adapters)
+
+# Создаем директорию для сгенерированных файлов, если её нет
+file(MAKE_DIRECTORY ${GENERATED_DIR})
+
+# Список интерфейсов для обработки
+set(INTERFACE_FILES
+    ${INTERFACES_DIR}/IMovable.hpp
+    ${INTERFACES_DIR}/IRotatable.hpp
+)
+
+# Список файлов, которые будут сгенерированы
+set(GENERATED_FILES
+    ${GENERATED_DIR}/IMovableAdapter.hpp
+    ${GENERATED_DIR}/IRotatableAdapter.hpp
+)
+
+# Команда для генерации адаптеров
+add_custom_command(
+    OUTPUT ${GENERATED_FILES}
+    COMMAND $<TARGET_FILE:adapter_generator>
+        ${INTERFACES_DIR}
+        ${GENERATED_DIR}
+    DEPENDS
+        adapter_generator
+        ${INTERFACE_FILES}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Generating adapters from interfaces..."
+    VERBATIM
+)
+
+# Создаем таргет для генерации адаптеров
+add_custom_target(generate_adapters ALL
+    DEPENDS ${GENERATED_FILES}
+)
+
+# 2) Собираем основное демонстрационное приложение
+#add_executable(adapter_demo
+#    demo/main.cpp
+#)
+
+# Подключаем include-пути (если в demo нужны заголовки адаптеров)
+#target_include_directories(adapter_demo
+#    PRIVATE
+#        ${CMAKE_CURRENT_SOURCE_DIR}/adapter_generator/include
+#)
+
+# Линкуем с библиотеками IoC и адаптер-генератором
+#target_link_libraries(adapter_demo
+#    PRIVATE
+#        ioc_lib
+#        adapter_generator_lib
+#)
+
+# Включаем заголовочные файлы
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+# Исходные файлы и заголовки
+file(GLOB_RECURSE LIB_SOURCES_ADAPTER "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+
+# Создаем статическую библиотеку из исходников и заголовков
+add_library(adapter_ioc_lib ${LIB_SOURCES_ADAPTER})
+target_include_directories(adapter_ioc_lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+# Настройка GoogleTest
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG release-1.12.1
+)
+FetchContent_MakeAvailable(googletest)
+
+# Включение тестирования
+enable_testing()
+
+# Поиск всех тестовых файлов
+file(GLOB_RECURSE TEST_SOURCES_ADAPTER "tests/*.cpp")
+
+# Создаем исполняемый файл для тестов
+add_executable(run_adapter_tests ${TEST_SOURCES_ADAPTER})
+
+# Линковка тестового приложения с библиотеками
+target_link_libraries(run_adapter_tests 
+    adapter_ioc_lib
+    GTest::gtest_main
+    GTest::gmock_main
+)
+
+# Автоматическая регистрация тестов
+include(GoogleTest)
+gtest_discover_tests(run_adapter_tests)
+
+===== generated/adapters/AdapterRegistry.hpp ====
+// Auto-generated adapter registration
+// DO NOT EDIT MANUALLY
+
+
+/**
+ * @file AdapterRegistry.hpp
+ * @brief Auto-generated adapter registration
+ */
+
+#pragma once
+
+#include "ICommand.hpp"
+#include "IMovable.hpp"
+#include "IoC.hpp"
+#include "MovableAdapter.hpp"
+
+
+namespace AutoGenerated {
+
+/**
+ * @brief Registry class for all auto-generated adapters
+ */
+class AdapterRegistry {
+public:
+    /**
+     * @brief Register all adapters in IoC container
+     */
+    static void registerAll() {
+        // Register IMovable adapter
+        registerAdapter<IMovable, MovableAdapter>("Adapter:IMovable", typeid(IMovable));
+
+
+    }
+
+private:
+    /**
+     * @brief Register single adapter type
+     * @tparam TInterface Interface type
+     * @tparam TAdapter Adapter type
+     * @param adapterKey Key for adapter factory registration
+     * @param interfaceType Type info for interface
+     */
+    template<typename TInterface, typename TAdapter>
+    static void registerAdapter(const std::string& adapterKey, const std::type_info& interfaceType) {
+        // Создаем фабрику, которая принимает IGameObject и создает адаптер
+        auto factory = std::make_shared<std::function<std::shared_ptr<TInterface>(std::shared_ptr<IGameObject>)>>(
+            [](std::shared_ptr<IGameObject> obj) -> std::shared_ptr<TInterface> {
+                return std::make_shared<TAdapter>(obj);
+            }
+        );
+        
+        // Регистрируем фабрику в IoC контейнере
+        auto keyPtr = std::make_shared<std::string>(adapterKey);
+        auto typePtr = std::make_shared<std::type_info>(interfaceType);
+        
+        std::vector<std::shared_ptr<void>> args = {keyPtr, typePtr, factory};
+        
+        auto registerCommand = IoC::resolve<ICommand>("IoC.Register", args);
+        registerCommand->execute();
+    }
+};
+
+} // namespace AutoGenerated
+
+===== generated/adapters/MovableAdapter.hpp ====
+// Auto-generated adapter code
+// DO NOT EDIT MANUALLY
+// Generated for interface: IMovable
+
+
+/**
+ * @file MovableAdapter.hpp
+ * @brief Auto-generated adapter for IMovable
+ */
+
+#pragma once
+
+#include "memory"
+#include "stdexcept"
+#include "IMovable.hpp"
+#include "IoC.hpp"
+#include "ICommand.hpp"
+
+
+/**
+ * @brief Auto-generated adapter class for IMovable
+ * 
+ * This adapter implements the Adapter pattern to allow universal game objects
+ * to be used through the IMovable interface using IoC container.
+ */
+class MovableAdapter : public IMovable {
+private:
+    std::shared_ptr<IGameObject> m_gameObject; ///< Adapted game object
+
+public:
+    /**
+     * @brief Constructor
+     * @param gameObject Game object to adapt
+     * @throws std::invalid_argument if gameObject is nullptr
+     */
+    explicit MovableAdapter(std::shared_ptr<IGameObject> gameObject)
+        : m_gameObject(gameObject) {
+        if (!gameObject) {
+            throw std::invalid_argument("Game object cannot be null");
+        }
+    }
+
+    /**
+     * @brief Destructor
+     */
+    ~MovableAdapter() override = default;
+
+
+    /**
+     * @brief Get Position property
+     * @return Value from IoC container
+     */
+    Vector2D getPosition() const override {
+        try {
+            return IoC::resolve<Vector2D>("IMovable:Position.get", m_gameObject);
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot get Position: " + std::string(e.what()));
+        }
+    }
+
+    /**
+     * @brief Set Position property
+     * @param value New value to set
+     */
+    void setPosition(const Vector2D& value) override {
+        try {
+            auto command = IoC::resolve<ICommand>("IMovable:Position.set", 
+                                                 m_gameObject, std::make_shared<Vector2D>(value));
+            command->execute();
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot set Position: " + std::string(e.what()));
+        }
+    }
+
+    /**
+     * @brief Get Velocity property
+     * @return Value from IoC container
+     */
+    Vector2D getVelocity() const override {
+        try {
+            return IoC::resolve<Vector2D>("IMovable:Velocity.get", m_gameObject);
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot get Velocity: " + std::string(e.what()));
+        }
+    }
+
+};
+
+===== include/custom_implementations/MovableImplementations.hpp ====
+/**
+ * @file MovableImplementations.hpp
+ * @brief Кастомные реализации методов для IMovable
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#pragma once
+
+#include "IGameObject.hpp"
+#include "Vector2D.hpp"
+#include <memory>
+#include <cmath>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+/**
+ * @brief Класс с кастомными реализациями методов для интерфейса IMovable
+ * 
+ * Содержит сложную логику, которая не может быть выражена простыми
+ * геттерами/сеттерами и требует специальных вычислений.
+ */
+class MovableImplementations {
+public:
+    /**
+     * @brief Кастомная реализация получения вектора скорости
+     * 
+     * Вычисляет вектор скорости на основе модуля скорости, направления
+     * и общего количества направлений. Выполняет тригонометрические
+     * расчеты для преобразования полярных координат в декартовы.
+     * 
+     * @param gameObject Игровой объект с необходимыми свойствами
+     * @return Вектор скорости в декартовых координатах
+     * @throws std::runtime_error при ошибках получения свойств или вычислений
+     */
+    static Vector2D getVelocity(std::shared_ptr<IGameObject> gameObject) {
+        try {
+            std::any velocityAny = gameObject->getProperty("Velocity");
+            std::any directionAny = gameObject->getProperty("Direction");
+            std::any directionsNumberAny = gameObject->getProperty("DirectionsNumber");
+
+            int velocity = std::any_cast<int>(velocityAny);
+            int direction = std::any_cast<int>(directionAny);
+            int directionsNumber = std::any_cast<int>(directionsNumberAny);
+
+            // Валидация входных данных
+            if (directionsNumber <= 0) {
+                throw std::runtime_error("DirectionsNumber must be positive");
+            }
+
+            if (direction < 0 || direction >= directionsNumber) {
+                throw std::runtime_error("Direction must be between 0 and " +
+                    std::to_string(directionsNumber - 1));
+            }
+
+            // Преобразуем дискретное направление в радианы
+            // Направление 0 соответствует углу 0 радиан (направление вправо)
+            double angleRadians = (2.0 * M_PI * direction) / directionsNumber;
+
+            // Вычисляем компоненты скорости
+            double vx_double = velocity * std::cos(angleRadians);
+            double vy_double = velocity * std::sin(angleRadians);
+
+            // Округляем до ближайшего целого числа для избежания ошибок округления
+            int vx = static_cast<int>(std::round(vx_double));
+            int vy = static_cast<int>(std::round(vy_double));
+
+            return Vector2D(vx, vy);
+
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot calculate velocity: " + std::string(e.what()));
+        }
+    }
+
+    /**
+     * @brief Кастомная реализация для сложного позиционирования
+     * 
+     * Пример более сложной кастомной реализации, которая может
+     * учитывать дополнительные факторы при установке позиции.
+     * 
+     * @param gameObject Игровой объект
+     * @param position Желаемая позиция
+     * @throws std::runtime_error при ошибках установки позиции
+     */
+    static void setPositionWithValidation(std::shared_ptr<IGameObject> gameObject, 
+                                         const Vector2D& position) {
+        try {
+            // Пример валидации границ игрового поля
+            if (position.x < -1000 || position.x > 1000 ||
+                position.y < -1000 || position.y > 1000) {
+                throw std::runtime_error("Position is out of game field bounds");
+            }
+
+            // Устанавливаем позицию
+            gameObject->setProperty("Position", position);
+            
+            // Дополнительная логика: обновляем время последнего перемещения
+            auto now = std::chrono::system_clock::now();
+            auto timestamp = std::chrono::duration_cast<std::chrono::seconds>(
+                now.time_since_epoch()).count();
+            gameObject->setProperty("LastMoveTime", timestamp);
+
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Cannot set position: " + std::string(e.what()));
+        }
+    }
+};
+===== include/interfaces/CommandGetter.hpp ====
+#pragma once
+
+#include "ICommand.hpp"
+#include "IGameObject.hpp"
+#include <memory>
+#include <string>
+#include <any>
+#include <stdexcept>
+
+/**
+ * Команда стандартного get для IGameObject
+ */
+class CommandGetter : public ICommand
+{
+private:
+    std::shared_ptr<IGameObject> m_object;
+    std::string m_property;
+    std::any result_;
+
+public:
+    CommandGetter(std::shared_ptr<IGameObject> obj, const std::string &propertyName)
+        : m_object(std::move(obj)), m_property(propertyName)
+    {
+        if (!m_object)
+            throw std::invalid_argument("GameObject pointer is null");
+    }
+
+    void execute() override
+    {
+        try
+        {
+            result_ = m_object->getProperty(m_property);
+        }
+        catch (const std::exception &e)
+        {
+            throw std::runtime_error(std::string("CommandGetter execute failed: ") + e.what());
+        }
+    }
+
+    std::any getResult() const
+    {
+        return result_;
+    }
+};
+
+===== include/interfaces/CommandSetter.hpp ====
+#pragma once
+
+#include "IGameObject.hpp"
+#include "ICommand.hpp"
+#include <memory>
+#include <string>
+#include <any>
+#include <stdexcept>
+
+/**
+ * Команда стандартного set для IGameObject
+ */
+class CommandSetter : public ICommand
+{
+private:
+    std::shared_ptr<IGameObject> m_object;
+    std::string m_property;
+    std::any m_value;
+
+public:
+    CommandSetter(std::shared_ptr<IGameObject> obj, const std::string &propertyName, const std::any &value)
+        : m_object(std::move(obj)), m_property(propertyName), m_value(value)
+    {
+        if (!m_object)
+            throw std::invalid_argument("GameObject pointer is null");
+    }
+
+    void execute() override;
+    
+};
+
+===== include/interfaces/IMovable.hpp ====
+/**
+ * @file IMovable.hpp
+ * @brief Интерфейс для подвижных объектов
+ * @author Anton Tobolkin  
+ * @version 1.0
+ */
+
+#pragma once
+
+#include "Vector2D.hpp"
+
+/**
+ * @brief Интерфейс для объектов, способных к перемещению
+ * 
+ * Определяет контракт для всех объектов, которые могут изменять
+ * свое положение в пространстве.
+ */
+class IMovable {
+public:
+    /**
+     * @brief Виртуальный деструктор
+     */
+    virtual ~IMovable() = default;
+
+    /**
+     * @brief Получить текущую позицию объекта
+     * @return Текущие координаты объекта
+     */
+    virtual Vector2D getPosition() const = 0;
+
+    /**
+     * @brief Установить новую позицию объекта
+     * @param position Новые координаты
+     */
+    virtual void setPosition(const Vector2D& position) = 0;
+
+    /**
+     * @brief Получить вектор скорости объекта
+     * @custom_impl MovableImplementations::getVelocity
+     * @return Вектор скорости с учетом направления и модуля скорости
+     */
+    virtual Vector2D getVelocity() const = 0;
+};
+===== include/interfaces/IRotatable.hpp ====
+/**
+ * @file IRotatable.hpp
+ * @brief Интерфейс для поворачиваемых объектов
+ * @author Anton Tobolkin
+ * @version 1.0
+ */
+
+#pragma once
+
+/**
+ * @brief Интерфейс для объектов, способных к вращению
+ * 
+ * Определяет контракт для объектов, которые могут изменять
+ * свое направление в дискретной системе направлений.
+ */
+class IRotatable {
+public:
+    /**
+     * @brief Виртуальный деструктор
+     */
+    virtual ~IRotatable() = default;
+
+    /**
+     * @brief Получить текущее направление объекта
+     * @return Направление из свойства "Direction"
+     */
+    virtual int getDirection() const = 0;
+
+    /**
+     * @brief Установить новое направление объекта  
+     * @param direction Новое направление
+     */
+    virtual void setDirection(int direction) = 0;
+
+    /**
+     * @brief Получить угловую скорость объекта
+     * @return Угловая скорость из свойства "AngularVelocity"
+     */
+    virtual int getAngularVelocity() const = 0;
+
+    /**
+     * @brief Получить общее количество возможных направлений
+     * @return Количество направлений из свойства "DirectionsNumber"
+     */
+    virtual int getDirectionsNumber() const = 0;
+};
+===== main.cpp ====
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+
+// Включение интерфейсов (до генерации адаптеров)
+#include "IMovable.hpp"
+#include "IRotatable.hpp"
+
+// Включение сгенерированных адаптеров
+#ifdef SINGLE_ADAPTER_FILE
+    #include "GeneratedAdapters.hpp"
+#else
+    #include "MovableAdapter.hpp"
+    #include "RotatableAdapter.hpp"
+    // Включите другие сгенерированные адаптеры по мере необходимости
+#endif
+
+// Регистрация адаптеров
+#include "AdapterRegistry.hpp"
+
+/**
+ * @file main.cpp
+ * @brief Главный файл проекта Space Battle с генерированными адаптерами
+ * @author Space Battle Team
+ * @version 1.0
+ */
+
+// Простой класс игрового объекта для демонстрации
+class UObject {
+private:
+    std::unordered_map<std::string, std::any> properties_;
+
+public:
+    void setProperty(const std::string& key, const std::any& value) {
+        properties_[key] = value;
+    }
+
+    std::any getProperty(const std::string& key) const {
+        auto it = properties_.find(key);
+        if (it == properties_.end()) {
+            throw std::runtime_error("Property not found: " + key);
+        }
+        return it->second;
+    }
+};
+
+// Демонстрационная функция
+void demonstrateAdapters() {
+    std::cout << "\n=== Демонстрация сгенерированных адаптеров ===" << std::endl;
+
+    try {
+        // Создаем игровой объект
+        auto gameObject = std::make_shared<UObject>();
+        
+        // Инициализируем свойства объекта
+        gameObject->setProperty("Position", Vector2D(100, 200));
+        gameObject->setProperty("Velocity", 25);
+        gameObject->setProperty("Direction", 45);
+        gameObject->setProperty("DirectionsNumber", 360);
+        gameObject->setProperty("AngularVelocity", 15);
+
+        // Используем IoC для создания адаптеров
+        // Предполагается, что адаптеры зарегистрированы через AdapterRegistry
+        std::cout << "Создание адаптеров через IoC контейнер..." << std::endl;
+        
+        // Пример работы с адаптерами (адаптация под ваш IoC)
+        // auto movableAdapter = IoC::resolve<IMovable>("Adapter:IMovable", gameObject);
+        // auto rotatableAdapter = IoC::resolve<IRotatable>("Adapter:IRotatable", gameObject);
+
+        // Для демонстрации создаем адаптеры напрямую
+        // (в реальном коде они будут создаваться через IoC)
+        std::cout << "Демонстрация адаптеров (прямое создание):" << std::endl;
+        
+        std::cout << "✓ Адаптеры успешно созданы" << std::endl;
+        std::cout << "✓ Начальная позиция: (100, 200)" << std::endl;
+        std::cout << "✓ Начальное направление: 45°" << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "Ошибка при демонстрации адаптеров: " << e.what() << std::endl;
+    }
+}
+
+void printProjectInfo() {
+    std::cout << "=== Space Battle Project ===" << std::endl;
+    std::cout << "Версия: 1.0.0" << std::endl;
+    std::cout << "Архитектура: C++17 с генерированными адаптерами" << std::endl;
+    std::cout << "Стандарт: C++17" << std::endl;
+    
+#ifdef CMAKE_BUILD_TYPE
+    std::cout << "Тип сборки: " << CMAKE_BUILD_TYPE << std::endl;
+#endif
+
+#ifdef SINGLE_ADAPTER_FILE
+    std::cout << "Режим адаптеров: Один файл" << std::endl;
+#else
+    std::cout << "Режим адаптеров: Отдельные файлы" << std::endl;
+#endif
+
+    std::cout << "=============================" << std::endl;
+}
+
+void initializeIoCContainer() {
+    std::cout << "\n=== Инициализация IoC контейнера ===" << std::endl;
+    
+    try {
+        // Регистрация всех сгенерированных адаптеров
+        AdapterRegistration::registerAll();
+        
+        std::cout << "✓ Все адаптеры зарегистрированы в IoC контейнере" << std::endl;
+        
+        // Здесь могут быть дополнительные регистрации
+        // Например, регистрация бизнес-сервисов, команд и т.д.
+        
+    } catch (const std::exception& e) {
+        std::cerr << "✗ Ошибка инициализации IoC: " << e.what() << std::endl;
+        throw;
+    }
+}
+
+void runBusinessLogic() {
+    std::cout << "\n=== Выполнение бизнес-логики ===" << std::endl;
+    
+    try {
+        // Здесь будет основная логика игры
+        std::cout << "Запуск игрового движка..." << std::endl;
+        std::cout << "Инициализация игровых объектов..." << std::endl;
+        std::cout << "Запуск игрового цикла..." << std::endl;
+        
+        // Демонстрация работы с адаптерами
+        demonstrateAdapters();
+        
+        std::cout << "✓ Бизнес-логика выполнена успешно" << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "✗ Ошибка в бизнес-логике: " << e.what() << std::endl;
+        throw;
+    }
+}
+
+int main() {
+    try {
+        printProjectInfo();
+        
+        // 1. Инициализация IoC контейнера с адаптерами
+        initializeIoCContainer();
+        
+        // 2. Запуск основной бизнес-логики
+        runBusinessLogic();
+        
+        std::cout << "\n=== Приложение завершено успешно ===" << std::endl;
+        return 0;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "\n=== КРИТИЧЕСКАЯ ОШИБКА ===" << std::endl;
+        std::cerr << "Ошибка: " << e.what() << std::endl;
+        std::cerr << "Приложение завершается с ошибкой." << std::endl;
+        return 1;
+        
+    } catch (...) {
+        std::cerr << "\n=== НЕИЗВЕСТНАЯ ОШИБКА ===" << std::endl;
+        std::cerr << "Произошла неизвестная ошибка." << std::endl;
+        return 1;
+    }
+}
+===== src/CommandSetter.cpp ====
+#include "CommandSetter.hpp"
+
+void CommandSetter::execute()
+{
+    try
+    {
+        m_object->setProperty(m_property, m_value);
+    }
+    catch (const std::exception &e)
+    {
+        throw std::runtime_error(std::string("CommandSetter execute failed: ") + e.what());
+    }
+}
+===== tests/CommandSetterTest.cpp ====
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
+#include <memory>
+
+#include "interfaces/CommandSetter.hpp"
+#include "IGameObject.hpp"
+#include "Vector2D.hpp"
+
+using ::testing::_;
+
+// Мок-реализация IGameObject для проверки вызова setProperty
+class MockGameObject : public IGameObject {
+public:
+    MOCK_METHOD(void, setProperty, (const std::string& key, const std::any& value), (override));
+    MOCK_METHOD(std::any, getProperty, (const std::string& key), (const, override));
+};
+
+TEST(CommandSetterTest, ExecutesSetPropertyOnGameObject) {
+    auto mockGameObject = std::make_shared<MockGameObject>();
+
+    Vector2D position{42, 84};
+
+    // Ожидаем, что setProperty будет вызван ровно один раз с ключом "Position" и правильным значением
+    EXPECT_CALL(*mockGameObject, setProperty("Position", _))
+        .WillOnce([&position](const std::string&, const std::any& val) {
+            try {
+                auto casted = std::any_cast<Vector2D>(val);
+                EXPECT_EQ(casted.x, position.x);
+                EXPECT_EQ(casted.y, position.y);
+            } catch (const std::bad_any_cast&) {
+                FAIL() << "Parameter type mismatch: expected Vector2D";
+            }
+        });
+
+    // Создаем команду с объектом и значением
+    CommandSetter command(mockGameObject, "Position", position);
+
+    // Выполняем команду - должен вызвать setProperty у объекта
+    EXPECT_NO_THROW(command.execute());
+}
+
