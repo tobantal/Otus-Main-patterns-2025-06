@@ -2,7 +2,7 @@
  * @file MovableImplementations.hpp
  * @brief Кастомные реализации методов для IMovable
  * @author Anton Tobolkin
- * @version 1.0
+ * @version 1.1
  */
 
 #pragma once
@@ -74,36 +74,4 @@ public:
         }
     }
 
-    /**
-     * @brief Кастомная реализация для сложного позиционирования
-     * 
-     * Пример более сложной кастомной реализации, которая может
-     * учитывать дополнительные факторы при установке позиции.
-     * 
-     * @param gameObject Игровой объект
-     * @param position Желаемая позиция
-     * @throws std::runtime_error при ошибках установки позиции
-     */
-    static void setPositionWithValidation(std::shared_ptr<IGameObject> gameObject, 
-                                         const Vector2D& position) {
-        try {
-            // Пример валидации границ игрового поля
-            if (position.x < -1000 || position.x > 1000 ||
-                position.y < -1000 || position.y > 1000) {
-                throw std::runtime_error("Position is out of game field bounds");
-            }
-
-            // Устанавливаем позицию
-            gameObject->setProperty("Position", position);
-            
-            // Дополнительная логика: обновляем время последнего перемещения
-            auto now = std::chrono::system_clock::now();
-            auto timestamp = std::chrono::duration_cast<std::chrono::seconds>(
-                now.time_since_epoch()).count();
-            gameObject->setProperty("LastMoveTime", timestamp);
-
-        } catch (const std::exception& e) {
-            throw std::runtime_error("Cannot set position: " + std::string(e.what()));
-        }
-    }
 };

@@ -8,7 +8,7 @@ project(hw-06-adapter VERSION 1.0.0 LANGUAGES CXX)
 add_subdirectory(adapter-generator)
 
 # Определяем пути для генерации
-set(INTERFACES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/interfaces)
+set(INTERFACES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/adapters)
 # TODO: генерировать адаптеры в bin папку
 set(GENERATED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated/adapters)
 
@@ -23,8 +23,7 @@ set(INTERFACE_FILES
 
 # Список файлов, которые будут сгенерированы
 set(GENERATED_FILES
-    ${GENERATED_DIR}/MovableAdapter.hpp
-    ${GENERATED_DIR}/RotatableAdapter.hpp
+    ${GENERATED_DIR}/*.hpp
 )
 
 # Команда для генерации адаптеров
