@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ICommand.hpp"
-#include "interfaces/IGameObject.hpp"
+#include "IGameObject.hpp"
 #include <memory>
 #include <string>
 #include <any>

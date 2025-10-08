@@ -1,6 +1,6 @@
 #pragma once
 
-#include "interfaces/IGameObject.hpp"
+#include "IGameObject.hpp"
 #include "ICommand.hpp"
 #include <memory>
 #include <string>
