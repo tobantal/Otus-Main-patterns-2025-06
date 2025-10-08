@@ -26,7 +26,7 @@ SimpleInterfaceParser::SimpleInterfaceParser()
     namespaceRegex_ = std::regex(R"(namespace\s+([A-Za-z_]\w*(?:(?:::\w+)+)?)\s*\{)");
 
     // Регулярное выражение для поиска кастомных аннотаций
-    customImplRegex_ = std::regex(R"(@custom_impl\s+(\w+::\w+))");
+    customImplRegex_ = std::regex(R"(@custom_impl\s+(\S+))");
 }
 
 std::vector<InterfaceInfo> SimpleInterfaceParser::parseFile(const std::string &filePath)
@@ -236,9 +236,8 @@ std::string SimpleInterfaceParser::extractMethodComments(
     const std::string &content,
     size_t methodPos)
 {
-
-    // Ищем комментарии перед методом (в пределах 500 символов)
-    size_t searchStart = (methodPos > 500) ? methodPos - 500 : 0;
+    // Ищем комментарии перед методом (в пределах 1500 символов)
+    size_t searchStart = (methodPos > 1500) ? methodPos - 1500 : 0;
     size_t searchLength = methodPos - searchStart;
     if (searchStart >= content.size())
         return "";
@@ -248,21 +247,28 @@ std::string SimpleInterfaceParser::extractMethodComments(
     }
     std::string searchArea = content.substr(searchStart, searchLength);
 
-    // Находим последний блочный комментарий или группу строчных комментариев
-    std::string comments;
-
     // Поиск блочного комментария /**...*/
     std::regex blockCommentRegex(R"(/\*\*([^*]|\*(?!/))*\*/)");
     std::sregex_iterator blockBegin(searchArea.begin(), searchArea.end(), blockCommentRegex);
     std::sregex_iterator blockEnd;
 
+    std::string lastComment;
+    size_t lastCommentEnd = 0;
+    
     for (auto it = blockBegin; it != blockEnd; ++it)
     {
-        comments = it->str();
+        size_t commentEndInSearch = it->position() + it->str().length();
+        
+        // Берем комментарий, который ближе всего к методу (но не после него)
+        if (commentEndInSearch > lastCommentEnd) {
+            lastComment = it->str();
+            lastCommentEnd = commentEndInSearch;
+        }
     }
 
-    return comments;
+    return lastComment;
 }
+
 
 std::string SimpleInterfaceParser::trim(const std::string &str)
 {

@@ -7,6 +7,7 @@
 
 #include "../../include/models/CustomImplementation.hpp"
 #include "../../include/utils/StringUtils.hpp"
+#include <iostream>
 
 bool CustomImplementation::isValid() const {
     return hasCustom && 

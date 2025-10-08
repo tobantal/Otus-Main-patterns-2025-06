@@ -9,8 +9,9 @@ add_subdirectory(adapter-generator)
 
 # Определяем пути для генерации
 set(INTERFACES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/adapters)
-# TODO: генерировать адаптеры в bin папку
-set(GENERATED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated/adapters)
+# \Генерируем адаптеры в build-директорию для автоматической очистки при clean
+set(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated/adapters)
+
 
 # Создаем директорию для сгенерированных файлов, если её нет
 file(MAKE_DIRECTORY ${GENERATED_DIR})

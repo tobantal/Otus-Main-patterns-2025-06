@@ -34,13 +34,11 @@ public:
      */
     virtual void setPosition(const Vector2D& position) = 0;
 
-    /**
+        /**
      * @brief Получить вектор скорости объекта
-     * TODO: указывать ключ в IoC, т.е. IMovable:Velocity.get
-     * или вообще убрать @custom_impl с метода.
-     * 
      * @custom_impl MovableImplementations::getVelocity
      * @return Вектор скорости с учетом направления и модуля скорости
      */
     virtual Vector2D getVelocity() const = 0;
+
 };
