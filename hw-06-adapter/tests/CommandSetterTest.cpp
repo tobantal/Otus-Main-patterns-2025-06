@@ -1,40 +1,44 @@
+// tests/CommandSetterTest.cpp
+
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include <memory>
+#include <any>
+#include <string>
+#include <unordered_map>
 
-#include "interfaces/CommandSetter.hpp"
-#include "interfaces/IGameObject.hpp"
-#include "interfaces/Vector2D.hpp"
+#include "IGameObject.hpp"
+#include "CommandSetter.hpp"
+#include "Vector2D.hpp"
 
-using ::testing::_;
-
-// Mock класса IGameObject для проверки вызова метода setProperty
-class MockGameObject : public IGameObject {
+// Тестовая реализация IGameObject
+class TestGameObject : public IGameObject {
 public:
-    MOCK_METHOD(void, setProperty, (const std::string& key, const std::any& value), (override));
-    MOCK_METHOD(std::any, getProperty, (const std::string& key), (const, override));
+    void setProperty(const std::string& key, const std::any& value) override {
+        props_[key] = value;
+    }
+
+    std::any getProperty(const std::string& key) const override {
+        auto it = props_.find(key);
+        if (it == props_.end()) {
+            throw std::runtime_error("Property not found: " + key);
+        }
+        return it->second;
+    }
+
+private:
+    std::unordered_map<std::string, std::any> props_;
 };
 
 TEST(CommandSetterTest, ExecutesSetProperty) {
-    auto mockGameObject = std::make_shared<MockGameObject>();
+    auto obj = std::make_shared<TestGameObject>();
     Vector2D position{42, 84};
 
-    // Ожидаем, что метод setProperty будет вызван ровно один раз с ключом "Position" и правильным значением
-    EXPECT_CALL(*mockGameObject, setProperty("Position", _))
-        .Times(1)
-        .WillOnce([&position](const std::string&, const std::any& val) {
-            try {
-                auto casted = std::any_cast<Vector2D>(val);
-                EXPECT_EQ(casted.x, position.x);
-                EXPECT_EQ(casted.y, position.y);
-            } catch (const std::bad_any_cast&) {
-                FAIL() << "Parameter type mismatch: expected Vector2D";
-            }
-        });
-
-    // Создаем команду
-    CommandSetter command(mockGameObject, "Position", position);
-
-    // Выполняем команду, проверить, что вызывается моковский метод setProperty с указанными параметрами
+    CommandSetter command(obj, "Position");
+    command.setValue(position);
     command.execute();
+
+    auto storedAny = obj->getProperty("Position");
+    auto stored = std::any_cast<Vector2D>(storedAny);
+    EXPECT_EQ(stored.x, position.x);
+    EXPECT_EQ(stored.y, position.y);
 }

@@ -1,43 +1,46 @@
+// tests/CommandGetterTest.cpp
+
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include <memory>
+#include <any>
+#include <string>
+#include <unordered_map>
 
-#include "interfaces/CommandGetter.hpp"
-#include "interfaces/IGameObject.hpp"
-#include "interfaces/Vector2D.hpp"
+#include "IGameObject.hpp"
+#include "CommandGetter.hpp"
+#include "Vector2D.hpp"
 
-using ::testing::_;
-
-// Мок-реализация IGameObject для проверки вызова getProperty
-class MockGameObject : public IGameObject {
+class TestGameObject : public IGameObject {
 public:
-    MOCK_METHOD(void, setProperty, (const std::string& key, const std::any& value), (override));
-    MOCK_METHOD(std::any, getProperty, (const std::string& key), (const, override));
+    void setProperty(const std::string& key, const std::any& value) override {
+        props_[key] = value;
+    }
+
+    std::any getProperty(const std::string& key) const override {
+        auto it = props_.find(key);
+        if (it == props_.end()) {
+            throw std::runtime_error("Property not found: " + key);
+        }
+        return it->second;
+    }
+
+private:
+    std::unordered_map<std::string, std::any> props_;
 };
 
 TEST(CommandGetterTest, ExecutesGetProperty) {
-    auto mockGameObject = std::make_shared<MockGameObject>();
+    auto obj = std::make_shared<TestGameObject>();
+    Vector2D expected{42, 84};
 
-    Vector2D expectedPosition{42, 84};
+    // \u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430
+    obj->setProperty("Position", expected);
 
-    // Ожидаем, что getProperty будет вызван ровно один раз с ключом "Position" и вернет expectedPosition
-    EXPECT_CALL(*mockGameObject, getProperty("Position"))
-        .Times(1)
-        .WillOnce(testing::Return(std::any(expectedPosition)));
+    // \u0412\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435
+    CommandGetter command(obj, "Position");
+    command.execute();
 
-    // Создаем команду с объектом и ключом свойства
-    CommandGetter command(mockGameObject, "Position");
-
-    // Выполняем команду - должен вызвать getProperty у объекта
-    EXPECT_NO_THROW(command.execute());
-
-    // Получаем результат и проверяем, что он совпадает с ожидаемым
-    std::any resultAny = command.getResult();
-    try {
-        auto result = std::any_cast<Vector2D>(resultAny);
-        EXPECT_EQ(result.x, expectedPosition.x);
-        EXPECT_EQ(result.y, expectedPosition.y);
-    } catch (const std::bad_any_cast&) {
-        FAIL() << "Result type mismatch: expected Vector2D";
-    }
+    auto resultAny = command.getResult();
+    auto result = std::any_cast<Vector2D>(resultAny);
+    EXPECT_EQ(result.x, expected.x);
+    EXPECT_EQ(result.y, expected.y);
 }

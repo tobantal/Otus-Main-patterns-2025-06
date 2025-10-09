@@ -6,38 +6,28 @@
 
 /**
  * @file IGameObject.hpp
- * @brief Универсальный интерфейс игрового объекта
- * @author Space Battle Team
- * @version 1.0
+ * @brief Р°Р±СЃС‚СЂР°РєС‚РЅС‹Р№ РёРіСЂРѕРІРѕР№ РѕР±СЉРµРєС‚
+ * @author Anton Tobolkin
+ * @version 1.1
  */
-
- /**
-  * @brief Универсальный интерфейс игрового объекта
-  *
-  * Предоставляет общий способ доступа к свойствам любого игрового объекта
-  * через паттерн "Свойство". Это обеспечивает расширяемость системы -
-  * можно добавлять новые типы объектов без изменения существующего кода.
-  */
 class IGameObject {
 public:
-    /**
-     * @brief Виртуальный деструктор
-     */
+
     virtual ~IGameObject() = default;
 
     /**
-     * @brief Получить значение свойства объекта
-     * @param key Ключ свойства
-     * @return Значение свойства
-     * @throws std::runtime_error если свойство не найдено или недоступно
+     * @brief РїРѕР»СѓС‡РёС‚СЊ РїР°СЂР°РјРµС‚СЂ
+     * @param key РєР»СЋС‡
+     * @return Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР°
+     * @throws std::runtime_error РѕС€РёР±РєР°
      */
     virtual std::any getProperty(const std::string& key) const = 0;
 
     /**
-     * @brief Установить значение свойства объекта
-     * @param key Ключ свойства
-     * @param value Новое значение
-     * @throws std::runtime_error если свойство нельзя установить
+     * @brief Р·Р°РґР°С‚СЊ РїР°СЂР°РјРµС‚СЂ
+     * @param key РєР»СЋС‡
+     * @param value РЅРѕРІРѕРµ Р·РЅР°С‡РµРЅРёРµ
+     * @throws std::runtime_error РѕС€РёР±РєР°
      */
     virtual void setProperty(const std::string& key, const std::any& value) = 0;
 };

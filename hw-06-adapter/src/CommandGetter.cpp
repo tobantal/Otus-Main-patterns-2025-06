@@ -1,4 +1,4 @@
-#include "interfaces/CommandGetter.hpp"
+#include "CommandGetter.hpp"
 
 void CommandGetter::execute()
 {

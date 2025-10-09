@@ -82,7 +82,10 @@ TEST_F(AdapterCodeGeneratorTest, GenerateGetterMethod) {
 
     // Проверяем getter метод
     EXPECT_NE(result.find("Vector getPosition() const override"), std::string::npos);
-    EXPECT_NE(result.find("IoC::resolve<Vector>(\"IMovable:Position.get\", m_gameObject)"), std::string::npos);
+    EXPECT_NE(result.find("(\"IMovable:Position.get\")"), std::string::npos);
+    EXPECT_NE(result.find("->execute()"), std::string::npos);
+    EXPECT_NE(result.find("->getResult()"), std::string::npos);
+
 }
 
 /**
@@ -93,9 +96,9 @@ TEST_F(AdapterCodeGeneratorTest, GenerateSetterMethod) {
     
     // Проверяем setter метод
     EXPECT_NE(result.find("void setPosition(const Vector& value) override"), std::string::npos);
-    EXPECT_NE(result.find("IoC::resolve<ICommand>(\"IMovable:Position.set\""), std::string::npos);
-    EXPECT_NE(result.find("m_gameObject, std::make_shared<Vector>(value)"), std::string::npos);
-    EXPECT_NE(result.find("command->execute()"), std::string::npos);
+    EXPECT_NE(result.find("(\"IMovable:Position.set\""), std::string::npos);
+    EXPECT_NE(result.find("->setValue(value)"), std::string::npos);
+    EXPECT_NE(result.find("->execute()"), std::string::npos);
 }
 
 /**

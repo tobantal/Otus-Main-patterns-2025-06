@@ -22,6 +22,8 @@ const std::string AdapterCodeGenerator::ADAPTER_TEMPLATE = R"(
 #pragma once
 
 {INCLUDES}
+#include "CommandSetter.hpp";
+#include "CommandGetter.hpp";
 
 /**
  * @brief Auto-generated adapter class for {INTERFACE_NAME}
@@ -62,7 +64,13 @@ const std::string AdapterCodeGenerator::GETTER_METHOD_TEMPLATE = R"(
      */
     {RETURN_TYPE} {METHOD_NAME}(){CONST_QUALIFIER} override {
         try {
-            return IoC::resolve<{RETURN_TYPE}>("{FULL_INTERFACE_NAME}:{PROPERTY_NAME}.get", m_gameObject);
+            auto getterFactory = IoC::resolve<
+                std::function<std::shared_ptr<ICommand>(std::shared_ptr<IGameObject>)>
+            >("{FULL_INTERFACE_NAME}:{PROPERTY_NAME}.get");
+            auto command = (*getterFactory)(m_gameObject);
+            command->execute();
+            auto getter = std::dynamic_pointer_cast<CommandGetter>(command);
+            return std::any_cast<{RETURN_TYPE}>(getter->getResult());
         } catch (const std::exception& e) {
             throw std::runtime_error("Cannot get {PROPERTY_NAME}: " + std::string(e.what()));
         }
@@ -76,9 +84,13 @@ const std::string AdapterCodeGenerator::SETTER_METHOD_TEMPLATE = R"(
      */
     void {METHOD_NAME}({PARAM_TYPE} value) override {
         try {
-            auto command = IoC::resolve<ICommand>("{FULL_INTERFACE_NAME}:{PROPERTY_NAME}.set", 
-                                                 m_gameObject, std::make_shared<{PARAM_TYPE_CLEAN}>(value));
-            command->execute();
+            auto setterFactory = IoC::resolve<
+                std::function<std::shared_ptr<ICommand>(std::shared_ptr<IGameObject>)>
+            >("{FULL_INTERFACE_NAME}:{PROPERTY_NAME}.set");
+            auto command = (*setterFactory)(m_gameObject);
+            auto setter = std::dynamic_pointer_cast<CommandSetter>(command);
+            setter->setValue(value);
+            setter->execute();
         } catch (const std::exception& e) {
             throw std::runtime_error("Cannot set {PROPERTY_NAME}: " + std::string(e.what()));
         }
@@ -141,27 +153,31 @@ private:
     /**
      * @brief Register single adapter type
      * @tparam TInterface Interface type
-     * @tparam TAdapter Adapter type
+     * @tparam TAdapter  Adapter type
      * @param adapterKey Key for adapter factory registration
-     * @param interfaceType Type info for interface
      */
     template<typename TInterface, typename TAdapter>
-    static void registerAdapter(const std::string& adapterKey, const std::type_info& interfaceType) {
-        // Создаем фабрику, которая принимает IGameObject и создает адаптер
-        auto factory = std::make_shared<std::function<std::shared_ptr<TInterface>(std::shared_ptr<IGameObject>)>>(
+    static void registerAdapter(const std::string& adapterKey) {
+        // 1) Создаём shared_ptr на std::function, создающую адаптер
+        auto factoryPtr = std::make_shared<
+            std::function<std::shared_ptr<TInterface>(std::shared_ptr<IGameObject>)>
+        >(
             [](std::shared_ptr<IGameObject> obj) -> std::shared_ptr<TInterface> {
                 return std::make_shared<TAdapter>(obj);
             }
         );
-        
-        // Регистрируем фабрику в IoC контейнере
+
+        // 2) Оборачиваем factoryPtr в IocContainer::FactoryFunction
+        IocContainer::FactoryFunction iocFactory = [factoryPtr]() -> std::shared_ptr<void> {
+            return factoryPtr;
+        };
+
+        // 3) Готовим аргументы для IoC.Register (2 аргумента)
         auto keyPtr = std::make_shared<std::string>(adapterKey);
-        auto typePtr = std::make_shared<std::type_info>(interfaceType);
-        
-        std::vector<std::shared_ptr<void>> args = {keyPtr, typePtr, factory};
-        
-        auto registerCommand = IoC::resolve<ICommand>("IoC.Register", args);
-        registerCommand->execute();
+        std::vector<std::shared_ptr<void>> args = { keyPtr, std::make_shared<IocContainer::FactoryFunction>(iocFactory) };
+
+        // 4) Вызываем IoC.Register и выполняем команду
+        IoC::resolve<ICommand>("IoC.Register", args)->execute();
     }
 };
 
@@ -207,9 +223,12 @@ std::string AdapterCodeGenerator::generateRegistrationCode(
         registrations << "        // Register " << interface.className << " adapter\n";
         registrations << "        registerAdapter<" << interface.getFullName() 
                      << ", " << interface.getAdapterName() 
-                     << ">(\"Adapter:" << interface.getFullName() << "\", typeid(" << interface.getFullName() << "));\n\n";
+                     << ">(\"Adapter:" << interface.getFullName() << "\");\n\n";
     }
     vars["REGISTRATIONS"] = registrations.str();
+
+    std::cout << "$$$$$$$$$$$$$$$$$$$\n" << vars["REGISTRATIONS"] << std::endl;//FIXME
+    std::cout << "$$$$$$$$$$$$$$$$$$$\n";
 
     return renderTemplate(REGISTRATION_TEMPLATE, vars);
 }

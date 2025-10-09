@@ -233,10 +233,13 @@ TEST_F(IntegrationTest, MethodTypeHandlingTest) {
     std::string adapterCode = generator->generateAdapter(interface);
     
     // Getter методы должны использовать IoC::resolve<ReturnType>
-    EXPECT_NE(adapterCode.find("IoC::resolve<Vector>(\"IComplexMovable:Position.get\""), std::string::npos);
-    
+    EXPECT_NE(adapterCode.find("(\"IComplexMovable:Position.get\""), std::string::npos);
+    EXPECT_NE(adapterCode.find("->execute()"), std::string::npos);
+    EXPECT_NE(adapterCode.find("->getResult()"), std::string::npos);
+
     // Setter методы должны вызывать execute()
-    EXPECT_NE(adapterCode.find("IoC::resolve<ICommand>(\"IComplexMovable:Position.set\""), std::string::npos);
+    EXPECT_NE(adapterCode.find("(\"IComplexMovable:Position.set\")"), std::string::npos);
+    EXPECT_NE(adapterCode.find("->setValue(value)"), std::string::npos);
     EXPECT_NE(adapterCode.find("->execute()"), std::string::npos);
     
     // Кастомные методы должны использовать статические вызовы

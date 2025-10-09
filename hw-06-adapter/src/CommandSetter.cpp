@@ -1,4 +1,4 @@
-#include "interfaces/CommandSetter.hpp"
+#include "CommandSetter.hpp"
 
 void CommandSetter::execute()
 {
