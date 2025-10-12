@@ -227,9 +227,6 @@ std::string AdapterCodeGenerator::generateRegistrationCode(
     }
     vars["REGISTRATIONS"] = registrations.str();
 
-    std::cout << "$$$$$$$$$$$$$$$$$$$\n" << vars["REGISTRATIONS"] << std::endl;//FIXME
-    std::cout << "$$$$$$$$$$$$$$$$$$$\n";
-
     return renderTemplate(REGISTRATION_TEMPLATE, vars);
 }
 
