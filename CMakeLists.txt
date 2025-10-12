@@ -1,6 +1,9 @@
 ﻿cmake_minimum_required (VERSION 3.14)
 
+# Установка стандарта C++17
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Включение горячей перезагрузки для компиляторов MSVC, если поддерживается.
 if (POLICY CMP0141)
@@ -27,4 +30,8 @@ enable_testing()
 #add_subdirectory("hw-03-solid-and-exceptions")
 #add_subdirectory ("hw-04-macro-commands")
 
-add_subdirectory("hw-05-ioc")
+# Подключаем hw-05-ioc: собираем её как библиотеку
+add_subdirectory(hw-05-ioc)
+
+# Подключаем hw-06-adapter
+add_subdirectory(hw-06-adapter)

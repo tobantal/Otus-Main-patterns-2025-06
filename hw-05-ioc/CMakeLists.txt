@@ -1,55 +1,41 @@
-﻿cmake_minimum_required(VERSION 3.14)
-project(hw-05-ioc VERSION 1.0.0 LANGUAGES CXX)
+﻿project(hw-05-ioc VERSION 1.0.1 LANGUAGES CXX)
 
-# Установка стандарта C++17
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+# Собираем исходные файлы
+file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
-# Добавление путей для поиска заголовочных файлов
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+# Создание библиотеки IoC
+add_library(ioc_lib ${SOURCES})
 
-# Сбор исходных файлов
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE HEADERS "include/*.hpp")
-
-# Создание библиотеки
-add_library(project_lib ${SOURCES})
+# Делаем include/ публичным для подпроектов
+target_include_directories(ioc_lib
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
 
 # Настройка GoogleTest
 include(FetchContent)
 FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG release-1.12.1
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        release-1.12.1
 )
 FetchContent_MakeAvailable(googletest)
 
-# Включение тестирования
+# Тесты для IoC
 enable_testing()
-
-# Сбор тестовых файлов
-file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
-
-# Создание исполняемого файла для тестов
-add_executable(run_tests ${TEST_SOURCES})
-
-# Линковка с библиотеками
-target_link_libraries(run_tests 
-    project_lib
+file(GLOB_RECURSE TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp")
+add_executable(ioc_tests ${TEST_SOURCES})
+target_link_libraries(ioc_tests
+  PRIVATE
+    ioc_lib
     GTest::gtest_main
     GTest::gmock_main
 )
-
-# Добавление тестов
 include(GoogleTest)
-gtest_discover_tests(run_tests)
+gtest_discover_tests(ioc_tests)
 
-# Демонстрационное приложение
-add_executable(demo demo/main.cpp)
-target_link_libraries(demo project_lib)
-
-# Вывод информации о конфигурации
-message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
-message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
-message(STATUS "CMAKE_CXX_STANDARD: ${CMAKE_CXX_STANDARD}")
+# Демонстрационное приложение (в том числе для интеграции)
+add_executable(ioc_demo "${CMAKE_CURRENT_SOURCE_DIR}/demo/main.cpp")
+target_link_libraries(ioc_demo
+  PRIVATE ioc_lib
+)
