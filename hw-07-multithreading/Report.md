@@ -17,6 +17,7 @@
 - Тесты с использованием std::condition_variable для синхронизации.
 
 ## Структура проекта:
+```bash
 hw-07-multithreading/
 ├── CMakeLists.txt
 ├── include/
@@ -35,3 +36,4 @@ hw-07-multithreading/
 └── tests/
     ├── CommandExecutorTest.cpp
     └── ThreadCommandsTest.cpp
+```
