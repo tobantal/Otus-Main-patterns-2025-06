@@ -31,7 +31,11 @@ enable_testing()
 #add_subdirectory ("hw-04-macro-commands")
 
 # Подключаем hw-05-ioc: собираем её как библиотеку
-add_subdirectory(hw-05-ioc)
+#add_subdirectory(hw-05-ioc)
 
 # Подключаем hw-06-adapter
-add_subdirectory(hw-06-adapter)
+#add_subdirectory(hw-06-adapter)
+
+
+# Подключаем hw-07-multithreading
+add_subdirectory(hw-07-multithreading)
