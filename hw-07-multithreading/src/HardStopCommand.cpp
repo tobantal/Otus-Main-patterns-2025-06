@@ -1,4 +1,5 @@
 #include "HardStopCommand.hpp"
+#include <stdexcept>
 
 HardStopCommand::HardStopCommand(std::shared_ptr<CommandExecutor> executor)
     : executor_(executor) {
