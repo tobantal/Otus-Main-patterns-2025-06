@@ -10,6 +10,7 @@ add_library(ioc_lib ${SOURCES})
 target_include_directories(ioc_lib
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<TARGET_PROPERTY:commonlib,INTERFACE_INCLUDE_DIRECTORIES>  # заголовки commonlib
 )
 
 # Настройка GoogleTest
@@ -27,6 +28,7 @@ file(GLOB_RECURSE TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp")
 add_executable(ioc_tests ${TEST_SOURCES})
 target_link_libraries(ioc_tests
   PRIVATE
+    commonlib
     ioc_lib
     GTest::gtest_main
     GTest::gmock_main
