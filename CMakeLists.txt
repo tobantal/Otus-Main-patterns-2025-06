@@ -34,8 +34,10 @@ enable_testing()
 #add_subdirectory(hw-05-ioc)
 
 # Подключаем hw-06-adapter
+# зависит от hw-05-ioc (раскомментировать при необходимости)
 #add_subdirectory(hw-06-adapter)
 
-
 # Подключаем hw-07-multithreading
-add_subdirectory(hw-07-multithreading)
+#add_subdirectory(hw-07-multithreading)
+
+add_subdirectory(hw-08-message-exchange)
