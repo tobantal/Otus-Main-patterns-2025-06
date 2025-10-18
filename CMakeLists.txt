@@ -41,7 +41,7 @@ add_subdirectory(hw-05-ioc)
 #add_subdirectory(hw-06-adapter)
 
 #Подключаем hw-07-multithreading: собираем её как библиотеку
-#--- add_subdirectory(hw-07-multithreading)
+add_subdirectory(hw-07-multithreading)
 
 # Использует библиотеки ioc, multithreading
 #--- add_subdirectory(hw-08-message-exchange)
