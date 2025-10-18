@@ -1,78 +1,101 @@
 #include <gtest/gtest.h>
 #include "http_server/httplib.h"
 #include <nlohmann/json.hpp>
-#include <thread>
-#include <chrono>
+#include "game_manager.hpp"
+#include "InterpretCommand.hpp"
+#include "IocContainer.hpp"
+#include "TestCommand.hpp"
 
 using json = nlohmann::json;
+using namespace httplib;
 
-class HelloWorldServerTest : public ::testing::Test {
+class ServerTest : public ::testing::Test {
 protected:
-    std::unique_ptr<httplib::Server> server;
-    std::thread server_thread;
-    
     void SetUp() override {
-        server = std::make_unique<httplib::Server>();
-        
-        // Регистрируем endpoint-ы (копируем из main.cpp)
-        server->Get("/hello", [](const httplib::Request&, httplib::Response& res) {
-            res.set_content("Hello World!", "text/plain");
+        // Регистрация тестовой команды
+        IocContainer::getInstance().registerGlobalDependency(
+            "test",
+            []() { return std::make_shared<TestCommand>(); }
+        );
+
+        // Инициализация менеджера и интерпретатора
+        interpreter_ = std::make_unique<InterpretCommand>(manager_);
+
+        // Настройка сервера
+        server_ = std::make_unique<Server>();
+        server_->Post("/game/command", [&](const Request& req, Response& res){
+            try {
+                auto j = json::parse(req.body);
+                auto& c = IocContainer::getInstance();
+                auto scope = c.createScope("req");
+                c.setCurrentScope("req");
+                scope->registerDependency(
+                    "incomingMessage",
+                    [j]() { return std::make_shared<json>(j); }
+                );
+                interpreter_->execute();
+                res.set_content(R"({"status":"accepted"})", "application/json");
+            } catch (...) {
+                res.status = 400;
+                res.set_content(R"({"error":"invalid_message"})", "application/json");
+            }
         });
-        
-        server->Get("/hello-json", [](const httplib::Request&, httplib::Response& res) {
-            res.set_content("{\"message\": \"Hello World!\"}", "application/json");
+
+        // Запуск в отдельном потоке
+        thread_ = std::thread([&]() {
+            server_->listen("localhost", 8081);
         });
-        
-        // Запускаем сервер в отдельном потоке на тестовом порту
-        server_thread = std::thread([this]() {
-            server->listen("localhost", 8081);
-        });
-        
-        // Даём серверу время запуститься
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
-    
+
     void TearDown() override {
-        server->stop();
-        if (server_thread.joinable()) {
-            server_thread.join();
-        }
+        server_->stop();
+        if (thread_.joinable()) thread_.join();
     }
+
+    GameManager manager_;
+    std::unique_ptr<InterpretCommand> interpreter_;
+    std::unique_ptr<Server> server_;
+    std::thread thread_;
 };
 
-// Тест GET /hello
-TEST_F(HelloWorldServerTest, HelloEndpoint) {
-    httplib::Client client("localhost", 8081);
-    
-    auto res = client.Get("/hello");
-    
-    ASSERT_TRUE(res);
+TEST_F(ServerTest, ValidCommand) {
+    Client cli("localhost", 8081);
+
+    // Формируем корректное сообщение
+    json j = {
+        {"gameId", "game123"},
+        {"operationId", "test"}
+    };
+    auto res = cli.Post("/game/command", j.dump(), "application/json");
+
+    ASSERT_NE(res, nullptr);
     EXPECT_EQ(res->status, 200);
-    EXPECT_EQ(res->body, "Hello World!");
-    EXPECT_EQ(res->get_header_value("Content-Type"), "text/plain");
+    EXPECT_EQ(res->body, R"({"status":"accepted"})");
 }
 
-// Тест GET /hello-json
-TEST_F(HelloWorldServerTest, HelloJsonEndpoint) {
-    httplib::Client client("localhost", 8081);
-    
-    auto res = client.Get("/hello-json");
-    
-    ASSERT_TRUE(res);
-    EXPECT_EQ(res->status, 200);
-    
-    // Проверяем JSON
-    auto j = json::parse(res->body);
-    EXPECT_EQ(j["message"], "Hello World!");
-    EXPECT_EQ(res->get_header_value("Content-Type"), "application/json");
+TEST_F(ServerTest, MissingFields) {
+    Client cli("localhost", 8081);
+
+    // Отсутствует operationId
+    json j = {
+        {"gameId", "game123"}
+    };
+    auto res = cli.Post("/game/command", j.dump(), "application/json");
+
+    ASSERT_NE(res, nullptr);
+    EXPECT_EQ(res->status, 400);
+    EXPECT_EQ(res->body, R"({"error":"invalid_message"})");
 }
 
-// Тест несуществующего endpoint
-TEST_F(HelloWorldServerTest, NotFoundEndpoint) {
-    httplib::Client client("localhost", 8081);
-    
-    auto res = client.Get("/nonexistent");
-    
-    ASSERT_TRUE(res);
-    EXPECT_EQ(res->status, 404);
+TEST_F(ServerTest, InvalidJson) {
+    Client cli("localhost", 8081);
+
+    // Некорректный JSON
+    std::string invalid = "not a json";
+    auto res = cli.Post("/game/command", invalid, "application/json");
+
+    ASSERT_NE(res, nullptr);
+    EXPECT_EQ(res->status, 400);
+    EXPECT_EQ(res->body, R"({"error":"invalid_message"})");
 }

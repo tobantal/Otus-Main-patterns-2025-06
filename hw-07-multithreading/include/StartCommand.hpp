@@ -3,7 +3,6 @@
 #include "ICommand.hpp"
 #include "CommandExecutor.hpp"
 #include <memory>
-#include <stdexcept>
 
 /**
  * @file StartCommand.hpp

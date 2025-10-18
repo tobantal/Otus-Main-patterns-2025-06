@@ -10,105 +10,98 @@
 
 /**
  * @file CommandQueue.hpp
- * @brief Класс очереди команд с обработкой исключений
- * @author Space Battle Team
+ * @brief РћС‡РµСЂРµРґСЊ РєРѕРјР°РЅРґ Рё РѕР±СЂР°Р±РѕС‚РєР° РёСЃРєР»СЋС‡РµРЅРёР№
+ * @author Anton Tobolkin
  * @version 1.0
  */
-
- /**
-  * @brief Класс для управления очередью команд и их выполнением
-  *
-  * Реализует паттерн Command с возможностью обработки исключений
-  * через различные стратегии (Strategy pattern)
-  */
 class CommandQueue {
 public:
     /**
-     * @brief Тип для хранения обработчиков исключений
-     *
-     * Ключ - пара (тип команды, тип исключения)
+     * @brief РљР»СЋС‡ РѕР±СЂР°Р±РѕС‚С‡РёРєР°: <РўРёРї РєРѕРјР°РЅРґС‹, РўРёРї РёСЃРєР»СЋС‡РµРЅРёСЏ>
      */
     using HandlerKey = std::pair<std::type_index, std::type_index>;
 
     /**
-     * @brief Конструктор по умолчанию
+     * @brief РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РѕС‡РµСЂРµРґРё РєРѕРјР°РЅРґ
      */
     CommandQueue();
 
     /**
-     * @brief Деструктор
+     * @brief Р”РµСЃС‚СЂСѓРєС‚РѕСЂ РѕС‡РµСЂРµРґРё РєРѕРјР°РЅРґ
      */
     ~CommandQueue() = default;
 
     /**
-     * @brief Добавить команду в очередь
-     * @param command Команда для добавления
+     * @brief Р”РѕР±Р°РІРёС‚СЊ РєРѕРјР°РЅРґСѓ РІ РѕС‡РµСЂРµРґСЊ
+     * @param command РЈРјРЅС‹Р№ СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РєРѕРјР°РЅРґСѓ
      */
     void push(std::shared_ptr<ICommand> command);
 
     /**
-     * @brief Обработать одну команду из очереди
-     * @return true если команда была обработана, false если очередь пуста
+     * @brief РћР±СЂР°Р±РѕС‚Р°С‚СЊ РѕРґРЅСѓ РєРѕРјР°РЅРґСѓ РёР· РѕС‡РµСЂРµРґРё
+     * @return true, РµСЃР»Рё РєРѕРјР°РЅРґР° Р±С‹Р»Р° РѕР±СЂР°Р±РѕС‚Р°РЅР°, false РµСЃР»Рё РѕС‡РµСЂРµРґСЊ РїСѓСЃС‚Р°
      */
     bool processOne();
 
     /**
-     * @brief Обработать все команды в очереди
+     * @brief РћР±СЂР°Р±РѕС‚Р°С‚СЊ РІСЃРµ РєРѕРјР°РЅРґС‹ РёР· РѕС‡РµСЂРµРґРё
      */
     void processAll();
 
     /**
-     * @brief Проверить, пуста ли очередь
-     * @return true если очередь пуста
+     * @brief РџСЂРѕРІРµСЂРёС‚СЊ, РїСѓСЃС‚Р° Р»Рё РѕС‡РµСЂРµРґСЊ
+     * @return true, РµСЃР»Рё РѕС‡РµСЂРµРґСЊ РїСѓСЃС‚Р°, РёРЅР°С‡Рµ false
      */
     bool isEmpty() const;
 
     /**
-     * @brief Получить размер очереди
-     * @return Количество команд в очереди
+     * @brief РџРѕР»СѓС‡РёС‚СЊ РєРѕР»РёС‡РµСЃС‚РІРѕ РєРѕРјР°РЅРґ РІ РѕС‡РµСЂРµРґРё
+     * @return РўРµРєСѓС‰РµРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РєРѕРјР°РЅРґ
      */
     size_t size() const;
 
     /**
-     * @brief Зарегистрировать обработчик исключений
-     * @tparam CommandType Тип команды
-     * @tparam ExceptionType Тип исключения
-     * @param handler Обработчик исключений
+     * @brief Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊ РѕР±СЂР°Р±РѕС‚С‡РёРє РёСЃРєР»СЋС‡РµРЅРёР№ РґР»СЏ РєРѕРЅРєСЂРµС‚РЅРѕР№ РєРѕРјР°РЅРґС‹
+     * @tparam CommandType РўРёРї РєРѕРјР°РЅРґС‹
+     * @tparam ExceptionType РўРёРї РёСЃРєР»СЋС‡РµРЅРёСЏ
+     * @param handler РћР±СЂР°Р±РѕС‚С‡РёРє РёСЃРєР»СЋС‡РµРЅРёСЏ
      */
     template<typename CommandType, typename ExceptionType>
     void registerHandler(std::shared_ptr<IExceptionHandler> handler) {
-        HandlerKey key(std::type_index(typeid(CommandType)),
-            std::type_index(typeid(ExceptionType)));
+        HandlerKey key(
+            std::type_index(typeid(CommandType)),
+            std::type_index(typeid(ExceptionType))
+        );
         handlers_[key] = handler;
     }
 
     /**
-     * @brief Установить обработчик по умолчанию
-     * @param handler Обработчик исключений по умолчанию
+     * @brief РЈСЃС‚Р°РЅРѕРІРёС‚СЊ РѕР±СЂР°Р±РѕС‚С‡РёРє РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ РґР»СЏ РІСЃРµС… РєРѕРјР°РЅРґ
+     * @param handler РћР±СЂР°Р±РѕС‚С‡РёРє РёСЃРєР»СЋС‡РµРЅРёР№ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
      */
     void setDefaultHandler(std::shared_ptr<IExceptionHandler> handler);
 
 private:
     /**
-     * @brief Очередь команд
+     * @brief РћС‡РµСЂРµРґСЊ РєРѕРјР°РЅРґ
      */
     std::queue<std::shared_ptr<ICommand>> commands_;
 
     /**
-     * @brief Карта обработчиков исключений
+     * @brief РљР°СЂС‚Р° Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅРЅС‹С… РѕР±СЂР°Р±РѕС‚С‡РёРєРѕРІ
      */
     std::map<HandlerKey, std::shared_ptr<IExceptionHandler>> handlers_;
 
     /**
-     * @brief Обработчик исключений по умолчанию
+     * @brief РћР±СЂР°Р±РѕС‚С‡РёРє РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
      */
     std::shared_ptr<IExceptionHandler> defaultHandler_;
 
     /**
-     * @brief Найти подходящий обработчик для исключения
-     * @param command Команда, выбросившая исключение
-     * @param exception Исключение
-     * @return Указатель на обработчик или nullptr
+     * @brief РќР°Р№С‚Рё РїРѕРґС…РѕРґСЏС‰РёР№ РѕР±СЂР°Р±РѕС‚С‡РёРє РґР»СЏ РєРѕРЅРєСЂРµС‚РЅРѕР№ РєРѕРјР°РЅРґС‹ Рё РёСЃРєР»СЋС‡РµРЅРёСЏ
+     * @param command РљРѕРјР°РЅРґР°, РІ РєРѕС‚РѕСЂРѕР№ РїСЂРѕРёР·РѕС€Р»Рѕ РёСЃРєР»СЋС‡РµРЅРёРµ
+     * @param exception РЎРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅРѕРµ РёСЃРєР»СЋС‡РµРЅРёРµ
+     * @return РЈРјРЅС‹Р№ СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РѕР±СЂР°Р±РѕС‚С‡РёРє РёР»Рё nullptr, РµСЃР»Рё РЅРµ РЅР°Р№РґРµРЅРѕ
      */
     std::shared_ptr<IExceptionHandler> findHandler(
         std::shared_ptr<ICommand> command,
