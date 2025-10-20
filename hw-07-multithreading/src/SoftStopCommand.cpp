@@ -1,4 +1,5 @@
 #include "SoftStopCommand.hpp"
+#include <stdexcept>
 
 SoftStopCommand::SoftStopCommand(std::shared_ptr<CommandExecutor> executor)
     : executor_(executor) {

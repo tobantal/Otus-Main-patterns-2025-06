@@ -24,6 +24,9 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
+# сборка общей библиотеки для всех проектов (включает ICommand.hpp)
+add_subdirectory(common)
+
 # Включите подпроекты.
 #add_subdirectory ("hw-01-square-equation-solver")
 #add_subdirectory ("hw-02-abstractions")
@@ -31,11 +34,14 @@ enable_testing()
 #add_subdirectory ("hw-04-macro-commands")
 
 # Подключаем hw-05-ioc: собираем её как библиотеку
-#add_subdirectory(hw-05-ioc)
+add_subdirectory(hw-05-ioc)
 
 # Подключаем hw-06-adapter
+# зависит от hw-05-ioc (раскомментировать при необходимости)
 #add_subdirectory(hw-06-adapter)
 
-
-# Подключаем hw-07-multithreading
+# Подключаем hw-07-multithreading: собираем её как библиотеку
 add_subdirectory(hw-07-multithreading)
+
+# Использует библиотеки ioc, multithreading
+add_subdirectory(hw-08-message-exchange)
