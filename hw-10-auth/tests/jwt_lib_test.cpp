@@ -16,8 +16,8 @@ class JWTLibTest : public ::testing::Test {
 protected:
     void SetUp() override {
         // Пути к ключам (должны быть сгенерированы заранее)
-        privateKeyPath_ = "keys/testing/private_key.pem";
-        publicKeyPath_ = "keys/testing/public_key.pem";
+        privateKeyPath_ = "keys/private_key.pem";
+        publicKeyPath_ = "keys/public_key.pem";
     }
 
     std::string privateKeyPath_;
