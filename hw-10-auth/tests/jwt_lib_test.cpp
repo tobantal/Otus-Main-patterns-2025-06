@@ -12,12 +12,14 @@ using json = nlohmann::json;
 /**
  * @brief Базовый тест для JWT библиотеки
  */
-class JWTLibTest : public ::testing::Test {
+class JWTLibTest : public ::testing::Test
+{
 protected:
-    void SetUp() override {
-        // Пути к ключам (должны быть сгенерированы заранее)
-        privateKeyPath_ = "keys/private_key.pem";
-        publicKeyPath_ = "keys/public_key.pem";
+    void SetUp() override
+    {
+        std::string testDir = std::string(__FILE__).substr(0, std::string(__FILE__).rfind('/'));
+        privateKeyPath_ = testDir + "/keys/private_key.pem";
+        publicKeyPath_ = testDir + "/keys/public_key.pem";
     }
 
     std::string privateKeyPath_;
@@ -28,7 +30,8 @@ protected:
 // Тесты JWTPayload
 // ============================================================================
 
-TEST_F(JWTLibTest, JWTPayload_ToJson_CorrectStructure) {
+TEST_F(JWTLibTest, JWTPayload_ToJson_CorrectStructure)
+{
     JWTPayload payload;
     payload.sub = "user_123";
     payload.iss = "auth-service";
@@ -60,7 +63,8 @@ TEST_F(JWTLibTest, JWTPayload_ToJson_CorrectStructure) {
     EXPECT_EQ(result["role"], "participant");
 }
 
-TEST_F(JWTLibTest, JWTPayload_FromJson_CorrectParsing) {
+TEST_F(JWTLibTest, JWTPayload_FromJson_CorrectParsing)
+{
     auto now = std::chrono::system_clock::now();
     auto now_time = std::chrono::system_clock::to_time_t(now);
     auto exp_time = std::chrono::system_clock::to_time_t(now + std::chrono::hours(1));
@@ -72,8 +76,7 @@ TEST_F(JWTLibTest, JWTPayload_FromJson_CorrectParsing) {
         {"gameId", "game_xyz"},
         {"role", "organizer"},
         {"iat", now_time},
-        {"exp", exp_time}
-    };
+        {"exp", exp_time}};
 
     // Парсим из JSON
     JWTPayload payload = JWTPayload::fromJson(j);
@@ -86,23 +89,26 @@ TEST_F(JWTLibTest, JWTPayload_FromJson_CorrectParsing) {
     EXPECT_EQ(payload.role, "organizer");
 }
 
-TEST_F(JWTLibTest, JWTPayload_IsExpired_NotExpired) {
+TEST_F(JWTLibTest, JWTPayload_IsExpired_NotExpired)
+{
     JWTPayload payload;
     auto now = std::chrono::system_clock::now();
-    payload.exp = now + std::chrono::hours(1);  // Истечёт через час
+    payload.exp = now + std::chrono::hours(1); // Истечёт через час
 
     EXPECT_FALSE(payload.isExpired());
 }
 
-TEST_F(JWTLibTest, JWTPayload_IsExpired_Expired) {
+TEST_F(JWTLibTest, JWTPayload_IsExpired_Expired)
+{
     JWTPayload payload;
     auto now = std::chrono::system_clock::now();
-    payload.exp = now - std::chrono::hours(1);  // Истёк час назад
+    payload.exp = now - std::chrono::hours(1); // Истёк час назад
 
     EXPECT_TRUE(payload.isExpired());
 }
 
-TEST_F(JWTLibTest, JWTPayload_RoundTrip_ConsistentData) {
+TEST_F(JWTLibTest, JWTPayload_RoundTrip_ConsistentData)
+{
     JWTPayload original;
     original.sub = "user_789";
     original.iss = "auth-service";
@@ -130,33 +136,34 @@ TEST_F(JWTLibTest, JWTPayload_RoundTrip_ConsistentData) {
 // Тесты RSAJWTGenerator и RSAJWTVerifier
 // ============================================================================
 
-TEST_F(JWTLibTest, RSAJWTGenerator_LoadsPrivateKey) {
+TEST_F(JWTLibTest, RSAJWTGenerator_LoadsPrivateKey)
+{
     // Тест что приватный ключ загружается без ошибок
     EXPECT_NO_THROW({
         RSAJWTGenerator generator(privateKeyPath_);
     });
 }
 
-TEST_F(JWTLibTest, RSAJWTVerifier_LoadsPublicKey) {
+TEST_F(JWTLibTest, RSAJWTVerifier_LoadsPublicKey)
+{
     // Тест что публичный ключ загружается без ошибок
     EXPECT_NO_THROW({
         RSAJWTVerifier verifier(publicKeyPath_);
     });
-    }
-
-TEST_F(JWTLibTest, RSAJWTGenerator_InvalidKeyPath_ThrowsException) {
-    EXPECT_THROW({
-        RSAJWTGenerator generator("invalid/path/private_key.pem");
-    }, JWTException);
 }
 
-TEST_F(JWTLibTest, RSAJWTVerifier_InvalidKeyPath_ThrowsException) {
-    EXPECT_THROW({
-        RSAJWTVerifier verifier("invalid/path/public_key.pem");
-    }, JWTException);
+TEST_F(JWTLibTest, RSAJWTGenerator_InvalidKeyPath_ThrowsException)
+{
+    EXPECT_THROW({ RSAJWTGenerator generator("invalid/path/private_key.pem"); }, JWTException);
 }
 
-TEST_F(JWTLibTest, RSAJWTGenerator_GenerateToken_ReturnsValidString) {
+TEST_F(JWTLibTest, RSAJWTVerifier_InvalidKeyPath_ThrowsException)
+{
+    EXPECT_THROW({ RSAJWTVerifier verifier("invalid/path/public_key.pem"); }, JWTException);
+}
+
+TEST_F(JWTLibTest, RSAJWTGenerator_GenerateToken_ReturnsValidString)
+{
     RSAJWTGenerator generator(privateKeyPath_);
 
     JWTPayload payload;
@@ -174,7 +181,8 @@ TEST_F(JWTLibTest, RSAJWTGenerator_GenerateToken_ReturnsValidString) {
     EXPECT_EQ(dotCount, 2);
 }
 
-TEST_F(JWTLibTest, RSAJWTGenerator_GenerateToken_DifferentTokensForDifferentPayloads) {
+TEST_F(JWTLibTest, RSAJWTGenerator_GenerateToken_DifferentTokensForDifferentPayloads)
+{
     RSAJWTGenerator generator(privateKeyPath_);
 
     JWTPayload payload1;
@@ -196,7 +204,8 @@ TEST_F(JWTLibTest, RSAJWTGenerator_GenerateToken_DifferentTokensForDifferentPayl
 // Тесты проверки JWT
 // ============================================================================
 
-TEST_F(JWTLibTest, RSAJWTVerifier_ValidToken_Success) {
+TEST_F(JWTLibTest, RSAJWTVerifier_ValidToken_Success)
+{
     RSAJWTGenerator generator(privateKeyPath_);
     RSAJWTVerifier verifier(publicKeyPath_);
 
@@ -217,17 +226,17 @@ TEST_F(JWTLibTest, RSAJWTVerifier_ValidToken_Success) {
     });
 }
 
-TEST_F(JWTLibTest, RSAJWTVerifier_InvalidToken_ThrowsException) {
+TEST_F(JWTLibTest, RSAJWTVerifier_InvalidToken_ThrowsException)
+{
     RSAJWTVerifier verifier(publicKeyPath_);
 
     std::string invalidToken = "invalid.token.here";
 
-    EXPECT_THROW({
-        verifier.verify(invalidToken);
-    }, JWTException);
+    EXPECT_THROW({ verifier.verify(invalidToken); }, JWTException);
 }
 
-TEST_F(JWTLibTest, RSAJWTVerifier_CorruptedToken_ThrowsException) {
+TEST_F(JWTLibTest, RSAJWTVerifier_CorruptedToken_ThrowsException)
+{
     RSAJWTGenerator generator(privateKeyPath_);
     RSAJWTVerifier verifier(publicKeyPath_);
 
@@ -240,16 +249,15 @@ TEST_F(JWTLibTest, RSAJWTVerifier_CorruptedToken_ThrowsException) {
     // Портим токен (меняем последний символ подписи)
     token[token.length() - 1] = (token[token.length() - 1] == 'A') ? 'B' : 'A';
 
-    EXPECT_THROW({
-        verifier.verify(token);
-    }, JWTException);
+    EXPECT_THROW({ verifier.verify(token); }, JWTException);
 }
 
 // ============================================================================
 // Тесты expiration
 // ============================================================================
 
-TEST_F(JWTLibTest, RSAJWTVerifier_ExpiredToken_ThrowsException) {
+TEST_F(JWTLibTest, RSAJWTVerifier_ExpiredToken_ThrowsException)
+{
     RSAJWTGenerator generator(privateKeyPath_);
     RSAJWTVerifier verifier(publicKeyPath_);
 
@@ -264,12 +272,11 @@ TEST_F(JWTLibTest, RSAJWTVerifier_ExpiredToken_ThrowsException) {
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // Пытаемся проверить истёкший токен
-    EXPECT_THROW({
-        verifier.verify(token);
-    }, JWTException);
+    EXPECT_THROW({ verifier.verify(token); }, JWTException);
 }
 
-TEST_F(JWTLibTest, RSAJWTVerifier_ValidTokenBeforeExpiration_Success) {
+TEST_F(JWTLibTest, RSAJWTVerifier_ValidTokenBeforeExpiration_Success)
+{
     RSAJWTGenerator generator(privateKeyPath_);
     RSAJWTVerifier verifier(publicKeyPath_);
 
@@ -291,7 +298,8 @@ TEST_F(JWTLibTest, RSAJWTVerifier_ValidTokenBeforeExpiration_Success) {
 // Тесты isValid()
 // ============================================================================
 
-TEST_F(JWTLibTest, RSAJWTVerifier_IsValid_ValidToken_ReturnsTrue) {
+TEST_F(JWTLibTest, RSAJWTVerifier_IsValid_ValidToken_ReturnsTrue)
+{
     RSAJWTGenerator generator(privateKeyPath_);
     RSAJWTVerifier verifier(publicKeyPath_);
 
@@ -304,7 +312,8 @@ TEST_F(JWTLibTest, RSAJWTVerifier_IsValid_ValidToken_ReturnsTrue) {
     EXPECT_TRUE(verifier.isValid(token));
 }
 
-TEST_F(JWTLibTest, RSAJWTVerifier_IsValid_InvalidToken_ReturnsFalse) {
+TEST_F(JWTLibTest, RSAJWTVerifier_IsValid_InvalidToken_ReturnsFalse)
+{
     RSAJWTVerifier verifier(publicKeyPath_);
 
     std::string invalidToken = "invalid.token.string";
@@ -312,7 +321,8 @@ TEST_F(JWTLibTest, RSAJWTVerifier_IsValid_InvalidToken_ReturnsFalse) {
     EXPECT_FALSE(verifier.isValid(invalidToken));
 }
 
-TEST_F(JWTLibTest, RSAJWTVerifier_IsValid_ExpiredToken_ReturnsFalse) {
+TEST_F(JWTLibTest, RSAJWTVerifier_IsValid_ExpiredToken_ReturnsFalse)
+{
     RSAJWTGenerator generator(privateKeyPath_);
     RSAJWTVerifier verifier(publicKeyPath_);
 
@@ -330,7 +340,8 @@ TEST_F(JWTLibTest, RSAJWTVerifier_IsValid_ExpiredToken_ReturnsFalse) {
 // Тесты payload extraction
 // ============================================================================
 
-TEST_F(JWTLibTest, RSAJWTVerifier_Verify_ExtractsPayloadCorrectly) {
+TEST_F(JWTLibTest, RSAJWTVerifier_Verify_ExtractsPayloadCorrectly)
+{
     RSAJWTGenerator generator(privateKeyPath_);
     RSAJWTVerifier verifier(publicKeyPath_);
 
@@ -353,7 +364,8 @@ TEST_F(JWTLibTest, RSAJWTVerifier_Verify_ExtractsPayloadCorrectly) {
 // Интеграционные тесты
 // ============================================================================
 
-TEST_F(JWTLibTest, FullCycle_GenerateAndVerifyMultipleTokens) {
+TEST_F(JWTLibTest, FullCycle_GenerateAndVerifyMultipleTokens)
+{
     RSAJWTGenerator generator(privateKeyPath_);
     RSAJWTVerifier verifier(publicKeyPath_);
 
@@ -361,7 +373,8 @@ TEST_F(JWTLibTest, FullCycle_GenerateAndVerifyMultipleTokens) {
     std::vector<JWTPayload> payloads;
     std::vector<std::string> tokens;
 
-    for (int i = 1; i <= 5; ++i) {
+    for (int i = 1; i <= 5; ++i)
+    {
         JWTPayload p;
         p.userId = "user_" + std::to_string(i);
         p.gameId = "game_" + std::to_string(i);
@@ -372,7 +385,8 @@ TEST_F(JWTLibTest, FullCycle_GenerateAndVerifyMultipleTokens) {
     }
 
     // Проверяем каждый токен
-    for (size_t i = 0; i < tokens.size(); ++i) {
+    for (size_t i = 0; i < tokens.size(); ++i)
+    {
         EXPECT_NO_THROW({
             JWTPayload verified = verifier.verify(tokens[i]);
             EXPECT_EQ(verified.userId, payloads[i].userId);
@@ -382,7 +396,8 @@ TEST_F(JWTLibTest, FullCycle_GenerateAndVerifyMultipleTokens) {
     }
 }
 
-TEST_F(JWTLibTest, CrossService_GeneratedTokensCanBeVerified) {
+TEST_F(JWTLibTest, CrossService_GeneratedTokensCanBeVerified)
+{
     // Симулируем ситуацию когда один сервис генерирует, другой проверяет
 
     RSAJWTGenerator authServiceGenerator(privateKeyPath_);
@@ -399,11 +414,11 @@ TEST_F(JWTLibTest, CrossService_GeneratedTokensCanBeVerified) {
     // Battle Service проверяет токен
     EXPECT_NO_THROW({
         JWTPayload verified = battleServiceVerifier.verify(token);
-        
+
         // Battle Service может проверить, что пользователь участвует в игре
         EXPECT_EQ(verified.gameId, "space_battle_001");
         EXPECT_EQ(verified.userId, "gamer_123");
-        
+
         // Может проверить role
         EXPECT_EQ(verified.role, "participant");
     });

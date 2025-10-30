@@ -34,17 +34,24 @@ JWTPayload RSAJWTVerifier::verify(const std::string &token)
 {
     try
     {
-        // Декодируем токен
         auto decoded = jwt::decode<jwt::traits::nlohmann_json>(token);
 
         // Верифицируем подпись
-        jwt::verify<jwt::traits::nlohmann_json>()
-            .allow_algorithm(jwt::algorithm::rs256(publicKey_))
-            .verify(decoded);
+        auto verifier = jwt::verify<jwt::traits::nlohmann_json>()
+            .allow_algorithm(jwt::algorithm::rs256(publicKey_));
+        
+        std::error_code ec;
+        verifier.verify(decoded, ec);
+        
+        if (ec) {
+            throw JWTException("Invalid signature: " + ec.message());
+        }
 
-        // Получаем payload
-        auto payload = decoded.get_payload();
+        // Получаем payload и парсим
+        auto payload_str = decoded.get_payload();
+        auto payload_json = json::parse(payload_str);
 
+        // Проверяем exp
         auto exp_claim = decoded.get_payload_claim("exp");
         auto exp_date = exp_claim.as_date();
         auto now = std::chrono::system_clock::now();
@@ -54,10 +61,7 @@ JWTPayload RSAJWTVerifier::verify(const std::string &token)
             throw JWTException("Token has expired");
         }
 
-        // Парсим payload в JWTPayload
-        JWTPayload result = JWTPayload::fromJson(payload);
-
-        return result;
+        return JWTPayload::fromJson(payload_json);
     }
     catch (const JWTException &)
     {
