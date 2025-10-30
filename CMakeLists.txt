@@ -48,3 +48,6 @@ add_subdirectory(hw-07-multithreading)
 
 # Использует библиотеки ioc, multithreading
 add_subdirectory(hw-08-message-exchange)
+
+# Сборка проекта с авторизацией
+add_subdirectory(hw-10-auth)
