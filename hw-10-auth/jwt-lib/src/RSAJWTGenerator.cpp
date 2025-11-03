@@ -5,11 +5,13 @@
 #include <chrono>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/traits.h>
+#include <iostream>
 
 using json = nlohmann::json;
 
 RSAJWTGenerator::RSAJWTGenerator(const std::string &privateKeyPath)
 {
+    std::cout << "Looking for private key at: " << privateKeyPath << std::endl;
     loadPrivateKey(privateKeyPath);
 }
 

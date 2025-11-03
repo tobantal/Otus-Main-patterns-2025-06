@@ -23,7 +23,6 @@ using json = nlohmann::json;
  *
  */   
 struct JWTPayload {
-    // ДАННЫЕ
     std::string sub;
     std::string iss;
     std::chrono::system_clock::time_point iat;
@@ -32,7 +31,6 @@ struct JWTPayload {
     std::string userId;
     std::string role;
     
-    // ДЕКЛАРАЦИИ методов
     json toJson() const;
     static JWTPayload fromJson(const json& j);
     bool isExpired() const;

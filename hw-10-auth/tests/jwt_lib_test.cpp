@@ -246,9 +246,9 @@ TEST_F(JWTLibTest, RSAJWTVerifier_CorruptedToken_ThrowsException)
 
     std::string token = generator.generate(payload);
 
-    // Портим токен (меняем последний символ подписи)
-    token[token.length() - 1] = (token[token.length() - 1] == 'A') ? 'B' : 'A';
-
+    // Меняем на невалидный символ Base64
+    token[token.length() - 1] = '!';  // '!' - невалидный Base64
+    
     EXPECT_THROW({ verifier.verify(token); }, JWTException);
 }
 

@@ -4,11 +4,13 @@
 #include <sstream>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/traits.h>
+#include <iostream>
 
 using json = nlohmann::json;
 
 RSAJWTVerifier::RSAJWTVerifier(const std::string &publicKeyPath)
 {
+    std::cout << "Looking for public key at: " << publicKeyPath << std::endl;
     loadPublicKey(publicKeyPath);
 }
 
@@ -38,18 +40,9 @@ JWTPayload RSAJWTVerifier::verify(const std::string &token)
 
         // Верифицируем подпись
         auto verifier = jwt::verify<jwt::traits::nlohmann_json>()
-            .allow_algorithm(jwt::algorithm::rs256(publicKey_));
-        
-        std::error_code ec;
-        verifier.verify(decoded, ec);
-        
-        if (ec) {
-            throw JWTException("Invalid signature: " + ec.message());
-        }
+                            .allow_algorithm(jwt::algorithm::rs256(publicKey_));
 
-        // Получаем payload и парсим
-        auto payload_str = decoded.get_payload();
-        auto payload_json = json::parse(payload_str);
+        verifier.verify(decoded); // ← БЕЗ error_code! Выбросит исключение если невалидна!
 
         // Проверяем exp
         auto exp_claim = decoded.get_payload_claim("exp");
@@ -61,6 +54,8 @@ JWTPayload RSAJWTVerifier::verify(const std::string &token)
             throw JWTException("Token has expired");
         }
 
+        // Парсим payload
+        auto payload_json = json::parse(decoded.get_payload());
         return JWTPayload::fromJson(payload_json);
     }
     catch (const JWTException &)
