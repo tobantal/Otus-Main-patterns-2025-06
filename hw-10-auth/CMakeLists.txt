@@ -55,4 +55,14 @@ add_executable(hw10_tests ${TEST_SOURCES})
 target_link_libraries(hw10_tests PRIVATE jwt_lib auth_service_lib battle_service_lib hw08_lib GTest::gtest_main)
 
 include(GoogleTest)
+
+# Копируем ключи в build директорию для тестов
+add_custom_target(copy_keys ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/keys
+    ${CMAKE_BINARY_DIR}/keys
+    COMMENT "Copying keys directory to build folder"
+)
+add_dependencies(hw10_tests copy_keys)
+
 gtest_discover_tests(hw10_tests)
