@@ -7,6 +7,9 @@
 #include "AuthApplication.hpp"
 #include "BattleApplication.hpp"
 
+#define PORT_AUTH 8095
+#define PORT_BATTLE 8090
+
 using json = nlohmann::json;
 
 class IntegrationTest : public ::testing::Test {
@@ -26,12 +29,12 @@ protected:
 
         std::cout << "[SUITE] Creating Auth Service server thread..." << std::endl;
         authServerThread = std::thread([]() {
-            authApp->run("127.0.0.1", 8095);
+            authApp->run("127.0.0.1", PORT_AUTH);
         });
 
         std::cout << "[SUITE] Creating Battle Service server thread..." << std::endl;
         battleServerThread = std::thread([]() {
-            battleApp->run("127.0.0.1", 8090);
+            battleApp->run("127.0.0.1", PORT_BATTLE);
         });
 
         std::cout << "[SUITE] Waiting 3 seconds for servers to start..." << std::endl;
@@ -71,7 +74,7 @@ std::thread IntegrationTest::battleServerThread;
 TEST_F(IntegrationTest, CreateGameAndIssueToken) {
     std::cout << "\n[TEST] ============ CreateGameAndIssueToken START ============" << std::endl;
     
-    httplib::Client authClient("127.0.0.1", 8095);
+    httplib::Client authClient("127.0.0.1", PORT_AUTH);
     authClient.set_connection_timeout(5, 0);
 
     // STEP 1
@@ -122,8 +125,8 @@ TEST_F(IntegrationTest, CreateGameAndIssueToken) {
 TEST_F(IntegrationTest, SendMoveCommandWithValidToken) {
     std::cout << "\n[TEST] ============ SendMoveCommandWithValidToken START ============" << std::endl;
     
-    httplib::Client authClient("127.0.0.1", 8095);
-    httplib::Client battleClient("127.0.0.1", 8090);
+    httplib::Client authClient("127.0.0.1", PORT_AUTH);
+    httplib::Client battleClient("127.0.0.1", PORT_BATTLE);
     authClient.set_connection_timeout(5, 0);
     battleClient.set_connection_timeout(5, 0);
 
@@ -187,7 +190,7 @@ TEST_F(IntegrationTest, SendMoveCommandWithValidToken) {
 TEST_F(IntegrationTest, RejectCommandWithInvalidToken) {
     std::cout << "\n[TEST] ============ RejectCommandWithInvalidToken START ============" << std::endl;
     
-    httplib::Client battleClient("127.0.0.1", 8090);
+    httplib::Client battleClient("127.0.0.1", PORT_BATTLE);
     battleClient.set_connection_timeout(5, 0);
 
     json commandReq;
@@ -216,7 +219,7 @@ TEST_F(IntegrationTest, RejectCommandWithInvalidToken) {
 TEST_F(IntegrationTest, RejectCommandWithoutToken) {
     std::cout << "\n[TEST] ============ RejectCommandWithoutToken START ============" << std::endl;
     
-    httplib::Client battleClient("127.0.0.1", 8090);
+    httplib::Client battleClient("127.0.0.1", PORT_BATTLE);
     battleClient.set_connection_timeout(5, 0);
 
     json commandReq;
@@ -240,7 +243,7 @@ TEST_F(IntegrationTest, RejectCommandWithoutToken) {
 TEST_F(IntegrationTest, RejectTokenForNonParticipant) {
     std::cout << "\n[TEST] ============ RejectTokenForNonParticipant START ============" << std::endl;
     
-    httplib::Client authClient("127.0.0.1", 8095);
+    httplib::Client authClient("127.0.0.1", PORT_AUTH);
     authClient.set_connection_timeout(5, 0);
 
     // STEP 1

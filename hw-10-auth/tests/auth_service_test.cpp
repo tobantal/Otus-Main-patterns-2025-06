@@ -7,6 +7,8 @@
 
 using json = nlohmann::json;
 
+#define PORT 8001
+
 class AuthServiceTest : public ::testing::Test {
 protected:
     static AuthApplication *authApp;
@@ -16,7 +18,7 @@ protected:
         std::cout << "[AUTH SERVICE TEST] SetUp" << std::endl;
         authApp = new AuthApplication();
         authServerThread = std::thread([]() {
-            authApp->run("127.0.0.1", 8095);
+            authApp->run("127.0.0.1", PORT);
         });
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
@@ -33,7 +35,7 @@ AuthApplication *AuthServiceTest::authApp = nullptr;
 std::thread AuthServiceTest::authServerThread;
 
 TEST_F(AuthServiceTest, CreateGameAndGetToken) {
-    httplib::Client client("127.0.0.1", 8095);
+    httplib::Client client("127.0.0.1", PORT);
     client.set_connection_timeout(5, 0);
     client.set_read_timeout(5, 0);
     
@@ -48,7 +50,7 @@ TEST_F(AuthServiceTest, CreateGameAndGetToken) {
 }
 
 TEST_F(AuthServiceTest, RejectTokenForNonParticipant) {
-    httplib::Client client("127.0.0.1", 8095);
+    httplib::Client client("127.0.0.1", PORT);
     
     json createReq;
     createReq["organizerId"] = "org_456";

@@ -26,4 +26,11 @@ jobs:
     - name: ✅ Run tests
       run: |
         cd ${{ github.workspace }}
-        ctest --test-dir build --output-on-failure
+        ctest --test-dir build --output-on-failure --timeout 60 -j 1 -V > test_output.log 2>&1 cat test_output.log
+
+    - name: 📊 Upload test logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+          name: test-logs
+          path: test_output.log

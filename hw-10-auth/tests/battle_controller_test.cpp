@@ -7,6 +7,8 @@
 #include "BattleApplication.hpp"
 #include "RSAJWTGenerator.hpp"
 
+#define PORT 8002
+
 using json = nlohmann::json;
 
 class BattleServiceTest : public ::testing::Test {
@@ -24,7 +26,7 @@ protected:
         battleApp = new BattleApplication();
         
         battleServerThread = std::thread([]() {
-            battleApp->run("127.0.0.1", 8090);
+            battleApp->run("127.0.0.1", PORT);
         });
         
         std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -49,7 +51,7 @@ std::string BattleServiceTest::privateKeyPath_ = "keys/private_key.pem";
 std::string BattleServiceTest::publicKeyPath_ = "keys/public_key.pem";
 
 TEST_F(BattleServiceTest, ValidToken_ReceivesCommand) {
-    httplib::Client client("127.0.0.1", 8090);
+    httplib::Client client("127.0.0.1", PORT);
     client.set_connection_timeout(5, 0);
 
     // Генерируем токен
@@ -78,7 +80,7 @@ TEST_F(BattleServiceTest, ValidToken_ReceivesCommand) {
 }
 
 TEST_F(BattleServiceTest, InvalidToken_Rejected) {
-    httplib::Client client("127.0.0.1", 8090);
+    httplib::Client client("127.0.0.1", PORT);
     client.set_connection_timeout(5, 0);
 
     json commandReq;
@@ -95,7 +97,7 @@ TEST_F(BattleServiceTest, InvalidToken_Rejected) {
 }
 
 TEST_F(BattleServiceTest, NoToken_Rejected) {
-    httplib::Client client("127.0.0.1", 8090);
+    httplib::Client client("127.0.0.1", PORT);
     client.set_connection_timeout(5, 0);
 
     json commandReq;
