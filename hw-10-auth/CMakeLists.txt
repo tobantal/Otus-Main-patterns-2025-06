@@ -50,19 +50,21 @@ target_link_libraries(battle_server PRIVATE battle_service_lib)
 
 # ========== Tests ==========
 enable_testing()
-file(GLOB_RECURSE TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
-add_executable(hw10_tests ${TEST_SOURCES})
-target_link_libraries(hw10_tests PRIVATE jwt_lib auth_service_lib battle_service_lib hw08_lib GTest::gtest_main)
 
-include(GoogleTest)
-
-# Копируем ключи в build директорию для тестов
+# Копируем ключи в build директорию ДЛЯ ТЕСТОВ
 add_custom_target(copy_keys ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/keys
     ${CMAKE_BINARY_DIR}/keys
     COMMENT "Copying keys directory to build folder"
 )
+
+file(GLOB_RECURSE TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
+add_executable(hw10_tests ${TEST_SOURCES})
+target_link_libraries(hw10_tests PRIVATE jwt_lib auth_service_lib battle_service_lib hw08_lib GTest::gtest_main)
+
+# hw10_tests ЗАВИСИТ от copy_keys
 add_dependencies(hw10_tests copy_keys)
 
+include(GoogleTest)
 gtest_discover_tests(hw10_tests)
