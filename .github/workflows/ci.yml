@@ -26,4 +26,4 @@ jobs:
     - name: ✅ Run tests (verbose)
       run: |
         cd ${{ github.workspace }}
-        ctest --test-dir build --output-on-failure --timeout 60 -j 1 --verbose
+        ctest --test-dir build --output-on-failure --timeout 60 --verbose

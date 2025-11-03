@@ -55,8 +55,8 @@ enable_testing()
 add_custom_target(copy_keys ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/keys
-    ${CMAKE_BINARY_DIR}/keys
-    COMMENT "Copying keys directory to build folder"
+    ${CMAKE_CURRENT_BINARY_DIR}/keys
+    COMMENT "Copying keys directory"
 )
 
 file(GLOB_RECURSE TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
