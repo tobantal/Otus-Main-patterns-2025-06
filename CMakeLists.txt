@@ -51,3 +51,6 @@ add_subdirectory(hw-08-message-exchange)
 
 # Сборка проекта с авторизацией
 add_subdirectory(hw-10-auth)
+
+# Сборка проекта со сменой состояний
+add_subdirectory(hw-11-state)
