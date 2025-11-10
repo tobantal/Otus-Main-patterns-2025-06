@@ -29,6 +29,7 @@ target_link_libraries(hw08_lib
     ioc_lib
     multithreadinglib
     nlohmann_json::nlohmann_json
+    httplib
 )
 
 # Серверное приложение

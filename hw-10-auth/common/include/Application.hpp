@@ -1,0 +1,52 @@
+#pragma once
+
+#include "httplib.h"
+#include <memory>
+#include <iostream>
+
+/**
+ * @brief Base Application класс для сервисов
+ *
+ * Использует Template Method паттерн.
+ * Подклассы переопределяют configure() для регистрации компонентов
+ * и configureControllers() для регистрации HTTP эндпоинтов
+ */
+class Application
+{
+private:
+    std::shared_ptr<httplib::Server> server;
+
+public:
+    virtual ~Application() = default;
+
+    /**
+     * @brief Запускает приложение с HTTP сервером
+     */
+    void run(const std::string &host, int port)
+    {
+        configure();
+        server = std::make_shared<httplib::Server>();
+        configureControllers(*server);
+        std::cout << "Starting server on " << host << ":" << port << "..." << std::endl;
+        server->listen(host.c_str(), port);
+    }
+
+    void stop()
+    {
+        if (server)
+        {
+            server->stop();
+        }
+    }
+
+protected:
+    /**
+     * @brief Переопределить для регистрации компонентов в IoC
+     */
+    virtual void configure() = 0;
+
+    /**
+     * @brief Переопределить для регистрации HTTP endpoints
+     */
+    virtual void configureControllers(httplib::Server &server) = 0;
+};

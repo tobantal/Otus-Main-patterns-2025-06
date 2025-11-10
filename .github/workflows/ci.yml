@@ -2,7 +2,7 @@
 
 on:
   push:
-    branches: [ master, develop ]
+    branches: [ master, develop, hw-11-state ]
   pull_request:
     branches: [ master ]
 
@@ -23,5 +23,7 @@ jobs:
     - name: ⚙️ Build
       run: cmake --build build --config Release
 
-    - name: ✅ Run tests
-      run: ctest --test-dir build --output-on-failure
+    - name: ✅ Run tests (verbose)
+      run: |
+        cd ${{ github.workspace }}
+        ctest --test-dir build --output-on-failure --timeout 60 --verbose

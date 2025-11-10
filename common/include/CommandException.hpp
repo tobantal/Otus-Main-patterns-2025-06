@@ -6,7 +6,7 @@
 /**
  * @file CommandException.hpp
  * @brief Исключение для команд
- * @author Space Battle Team
+ * @author Anton Tobolkin
  * @version 1.0
  */
 
