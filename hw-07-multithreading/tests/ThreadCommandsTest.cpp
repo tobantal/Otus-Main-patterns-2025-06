@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "CommandExecutor.hpp"
-#include "ThreadSafeQueue.hpp"
+#include "LegacyThreadSafeQueue.hpp"
 #include "StartCommand.hpp"
 #include "HardStopCommand.hpp"
 #include "SoftStopCommand.hpp"
@@ -56,11 +56,11 @@ public:
  */
 class ThreadCommandsTest : public ::testing::Test {
 protected:
-    std::shared_ptr<ThreadSafeQueue> queue;
+    std::shared_ptr<LegacyThreadSafeQueue> queue;
     std::shared_ptr<CommandExecutor> executor;
 
     void SetUp() override {
-        queue = std::make_shared<ThreadSafeQueue>();
+        queue = std::make_shared<LegacyThreadSafeQueue>();
         executor = std::make_shared<CommandExecutor>(queue);
     }
 
@@ -168,7 +168,7 @@ TEST_F(ThreadCommandsTest, SoftStopCommandWaitsForAllTasks) {
 TEST_F(ThreadCommandsTest, HardVsSoftStopComparison) {
     // Test hard stop
     {
-        auto queue1 = std::make_shared<ThreadSafeQueue>();
+        auto queue1 = std::make_shared<LegacyThreadSafeQueue>();
         auto executor1 = std::make_shared<CommandExecutor>(queue1);
         
         executor1->start();
@@ -190,7 +190,7 @@ TEST_F(ThreadCommandsTest, HardVsSoftStopComparison) {
 
     // Test soft stop
     {
-        auto queue2 = std::make_shared<ThreadSafeQueue>();
+        auto queue2 = std::make_shared<LegacyThreadSafeQueue>();
         auto executor2 = std::make_shared<CommandExecutor>(queue2);
         
         executor2->start();

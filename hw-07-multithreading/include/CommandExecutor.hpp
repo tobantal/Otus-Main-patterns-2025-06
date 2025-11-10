@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ThreadSafeQueue.hpp"
+#include "LegacyThreadSafeQueue.hpp"
 #include "ICommand.hpp"
 #include <thread>
 #include <atomic>
@@ -22,7 +22,7 @@
  */
 class CommandExecutor {
 private:
-    std::shared_ptr<ThreadSafeQueue> queue_;
+    std::shared_ptr<LegacyThreadSafeQueue> queue_;
     std::unique_ptr<std::thread> thread_;
     std::atomic<bool> running_;
     std::atomic<bool> softStop_;
@@ -37,7 +37,7 @@ public:
      * @brief Конструктор
      * @param queue Потокобезопасная очередь команд
      */
-    explicit CommandExecutor(std::shared_ptr<ThreadSafeQueue> queue);
+    explicit CommandExecutor(std::shared_ptr<LegacyThreadSafeQueue> queue);
 
     /**
      * @brief Деструктор
@@ -83,5 +83,5 @@ public:
      * @brief Получить очередь команд
      * @return Указатель на очередь команд
      */
-    std::shared_ptr<ThreadSafeQueue> getQueue() const;
+    std::shared_ptr<LegacyThreadSafeQueue> getQueue() const;
 };
