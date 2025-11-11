@@ -16,6 +16,12 @@ file(GLOB_RECURSE HEADERS "include/*.hpp")
 # Создание библиотеки
 add_library(exception_handler_lib ${SOURCES} ${HEADERS})
 
+target_include_directories(exception_handler_lib
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<TARGET_PROPERTY:commonlib,INTERFACE_INCLUDE_DIRECTORIES>  # заголовки commonlib
+)
+
 # Настройка GoogleTest
 include(FetchContent)
 FetchContent_Declare(

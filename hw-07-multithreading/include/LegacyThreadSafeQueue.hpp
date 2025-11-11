@@ -20,7 +20,7 @@
  * Реализует thread-safe очередь с блокирующими операциями.
  * Использует mutex и condition_variable для синхронизации.
  */
-class ThreadSafeQueue {
+class LegacyThreadSafeQueue {
 private:
     std::queue<std::shared_ptr<ICommand>> queue_;
     mutable std::mutex mutex_;
@@ -31,12 +31,12 @@ public:
     /**
      * @brief Конструктор по умолчанию
      */
-    ThreadSafeQueue();
+    LegacyThreadSafeQueue();
 
     /**
      * @brief Деструктор
      */
-    ~ThreadSafeQueue() = default;
+    ~LegacyThreadSafeQueue() = default;
 
     /**
      * @brief Добавить команду в очередь

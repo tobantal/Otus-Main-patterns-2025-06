@@ -34,7 +34,7 @@ add_subdirectory(httplib-wrapper)
 #add_subdirectory ("hw-01-square-equation-solver")
 #add_subdirectory ("hw-02-abstractions")
 #add_subdirectory("hw-03-solid-and-exceptions")
-#add_subdirectory ("hw-04-macro-commands")
+add_subdirectory ("hw-04-macro-commands")
 
 # Подключаем hw-05-ioc: собираем её как библиотеку
 add_subdirectory(hw-05-ioc)
@@ -51,3 +51,6 @@ add_subdirectory(hw-08-message-exchange)
 
 # Сборка проекта с авторизацией
 add_subdirectory(hw-10-auth)
+
+# Сборка проекта со сменой состояний
+add_subdirectory(hw-11-state)

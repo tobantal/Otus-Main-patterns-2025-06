@@ -1,10 +1,10 @@
-#include "ThreadSafeQueue.hpp"
+#include "LegacyThreadSafeQueue.hpp"
 
-ThreadSafeQueue::ThreadSafeQueue() 
+LegacyThreadSafeQueue::LegacyThreadSafeQueue() 
     : shutdown_(false) {
 }
 
-void ThreadSafeQueue::push(std::shared_ptr<ICommand> command) {
+void LegacyThreadSafeQueue::push(std::shared_ptr<ICommand> command) {
     if (!command) {
         return;
     }
@@ -19,7 +19,7 @@ void ThreadSafeQueue::push(std::shared_ptr<ICommand> command) {
     condVar_.notify_one();
 }
 
-bool ThreadSafeQueue::pop(std::shared_ptr<ICommand>& command) {
+bool LegacyThreadSafeQueue::pop(std::shared_ptr<ICommand>& command) {
     std::unique_lock<std::mutex> lock(mutex_);
     
     condVar_.wait(lock, [this]() { 
@@ -35,7 +35,7 @@ bool ThreadSafeQueue::pop(std::shared_ptr<ICommand>& command) {
     return true;
 }
 
-bool ThreadSafeQueue::tryPop(std::shared_ptr<ICommand>& command) {
+bool LegacyThreadSafeQueue::tryPop(std::shared_ptr<ICommand>& command) {
     std::lock_guard<std::mutex> lock(mutex_);
     
     if (queue_.empty()) {
@@ -47,7 +47,7 @@ bool ThreadSafeQueue::tryPop(std::shared_ptr<ICommand>& command) {
     return true;
 }
 
-bool ThreadSafeQueue::popWithTimeout(std::shared_ptr<ICommand>& command,
+bool LegacyThreadSafeQueue::popWithTimeout(std::shared_ptr<ICommand>& command,
                                      std::chrono::milliseconds timeout) {
     std::unique_lock<std::mutex> lock(mutex_);
     
@@ -64,17 +64,17 @@ bool ThreadSafeQueue::popWithTimeout(std::shared_ptr<ICommand>& command,
     return true;
 }
 
-bool ThreadSafeQueue::isEmpty() const {
+bool LegacyThreadSafeQueue::isEmpty() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return queue_.empty();
 }
 
-size_t ThreadSafeQueue::size() const {
+size_t LegacyThreadSafeQueue::size() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return queue_.size();
 }
 
-void ThreadSafeQueue::shutdown() {
+void LegacyThreadSafeQueue::shutdown() {
     {
         std::lock_guard<std::mutex> lock(mutex_);
         shutdown_ = true;
@@ -82,7 +82,7 @@ void ThreadSafeQueue::shutdown() {
     condVar_.notify_all();
 }
 
-bool ThreadSafeQueue::isShutdown() const {
+bool LegacyThreadSafeQueue::isShutdown() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return shutdown_;
 }

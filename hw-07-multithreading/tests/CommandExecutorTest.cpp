@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "CommandExecutor.hpp"
-#include "ThreadSafeQueue.hpp"
+#include "LegacyThreadSafeQueue.hpp"
 #include <chrono>
 #include <thread>
 #include <atomic>
@@ -41,11 +41,11 @@ public:
  */
 class CommandExecutorTest : public ::testing::Test {
 protected:
-    std::shared_ptr<ThreadSafeQueue> queue;
+    std::shared_ptr<LegacyThreadSafeQueue> queue;
     std::shared_ptr<CommandExecutor> executor;
 
     void SetUp() override {
-        queue = std::make_shared<ThreadSafeQueue>();
+        queue = std::make_shared<LegacyThreadSafeQueue>();
         executor = std::make_shared<CommandExecutor>(queue);
     }
 

@@ -1,7 +1,7 @@
 #include "CommandExecutor.hpp"
 #include <iostream>
 
-CommandExecutor::CommandExecutor(std::shared_ptr<ThreadSafeQueue> queue)
+CommandExecutor::CommandExecutor(std::shared_ptr<LegacyThreadSafeQueue> queue)
     : queue_(queue)
     , thread_(nullptr)
     , running_(false)
@@ -97,6 +97,6 @@ void CommandExecutor::join() {
     }
 }
 
-std::shared_ptr<ThreadSafeQueue> CommandExecutor::getQueue() const {
+std::shared_ptr<LegacyThreadSafeQueue> CommandExecutor::getQueue() const {
     return queue_;
 }
