@@ -1,6 +1,7 @@
 #pragma once
 
-#include "ServerConfig.hpp"
+#include "IEnvironment.hpp"
+#include <memory>
 
 /**
  * @file IWebApplication.hpp
@@ -14,51 +15,110 @@
  * 
  * Паттерн Template Method:
  * - run() - шаблонный метод (не виртуальный)
+ * - loadEnvironment() - загрузка конфигурации из окружения
  * - configureInjection() - настройка DI
- * - configureRoutes() - настройка маршрутов
  * - start() - запуск сервера
  */
 class IWebApplication
 {
 public:
-    /**
-     * @brief Конструктор с конфигурацией сервера
-     */
-    IWebApplication(const ServerConfig& config) 
-        : config_(config) {}
-    
+    IWebApplication() = default;
     virtual ~IWebApplication() = default;
 
     /**
      * @brief Запустить приложение (Template Method)
      * 
      * Вызывает последовательно:
-     * 1. configureInjection()
-     * 2. configureRoutes()
-     * 3. start()
+     * 1. loadEnvironment(argc, argv) - парсинг аргументов и загрузка конфигурации
+     * 2. configureInjection() - настройка DI контейнера
+     * 3. start() - запуск HTTP сервера
+     * 
+     * @param argc Количество аргументов командной строки
+     * @param argv Массив аргументов командной строки
      */
-    void run()
+    void run(int argc, char* argv[])
     {
+        loadEnvironment(argc, argv);
         configureInjection();
-        configureRoutes();
         start();
     }
 
 protected:
+    /**
+     * @brief Загрузить конфигурацию из окружения
+     * 
+     * PRODUCTION-LIKE РЕАЛИЗАЦИЯ ДОЛЖНА ВКЛЮЧАТЬ:
+     * ================================================
+     * 
+     * 1. ПАРСИНГ АРГУМЕНТОВ КОМАНДНОЙ СТРОКИ:
+     *    - Флаги запуска (--port=8080, --host=0.0.0.0, --env=production)
+     *    - Путь к конфигурационному файлу (--config=/etc/app/config.yaml)
+     *    - Уровень логирования (--log-level=info)
+     *    - Режим работы (--mode=cluster)
+     * 
+     * 2. ЗАГРУЗКА ПЕРЕМЕННЫХ ОКРУЖЕНИЯ (12-Factor App):
+     *    - APP_PORT, APP_HOST
+     *    - DATABASE_URL, REDIS_URL
+     *    - JWT_SECRET, API_KEY
+     *    - LOG_LEVEL, ENVIRONMENT (dev/staging/prod)
+     * 
+     * 3. ЧТЕНИЕ КОНФИГУРАЦИОННЫХ ФАЙЛОВ:
+     *    - YAML/JSON/TOML конфигурация
+     *    - Секреты из файлов (Docker secrets, Kubernetes secrets)
+     *    - Профили конфигурации (dev.yaml, prod.yaml)
+     * 
+     * 4. ЗАГРУЗКА SSL/TLS СЕРТИФИКАТОВ:
+     *    - Пути к сертификатам (cert.pem, key.pem)
+     *    - CA bundle для проверки клиентских сертификатов
+     *    - Валидация сертификатов (проверка срока действия)
+     * 
+     * 5. ИНТЕГРАЦИЯ С ВНЕШНИМИ СЕРВИСАМИ:
+     *    - Consul/etcd для distributed configuration
+     *    - HashiCorp Vault для секретов
+     *    - AWS Systems Manager Parameter Store
+     *    - Azure Key Vault, Google Cloud Secret Manager
+     * 
+     * 6. ВАЛИДАЦИЯ КОНФИГУРАЦИИ:
+     *    - Проверка обязательных параметров
+     *    - Валидация форматов (URL, email, IP)
+     *    - Проверка доступности ресурсов (порты, файлы)
+     *    - Early fail если конфигурация невалидна
+     * 
+     * 7. ПРИОРИТЕТ ИСТОЧНИКОВ (от низкого к высокому):
+     *    - Значения по умолчанию в коде
+     *    - Конфигурационные файлы
+     *    - Переменные окружения
+     *    - Аргументы командной строки
+     *    - Remote configuration (Consul/etcd)
+     * 
+     * ТЕКУЩАЯ УЧЕБНАЯ РЕАЛИЗАЦИЯ:
+     * ================================================
+     * В данном учебном проекте метод loadEnvironment() будет упрощен:
+     * - Устанавливаем хардкод значения: host="0.0.0.0", port=8080
+     * - В будущем можно добавить простой парсинг argc/argv
+     * - Не загружаем сертификаты и внешние конфигурации
+     * - Достаточно для демонстрации архитектурного паттерна
+     * 
+     * Цель учебной реализации - показать место в архитектуре,
+     * где должна происходить загрузка конфигурации, без усложнения
+     * кода реальной логикой парсинга и валидации.
+     * 
+     * @param argc Количество аргументов командной строки
+     * @param argv Массив аргументов командной строки
+     */
+    virtual void loadEnvironment(int argc, char* argv[]) = 0;
+
     /**
      * @brief Настроить DI контейнер (Boost.DI injector)
      */
     virtual void configureInjection() = 0;
 
     /**
-     * @brief Настроить маршруты (регистрация хендлеров)
-     */
-    virtual void configureRoutes() = 0;
-
-    /**
      * @brief Запустить HTTP сервер
+     * 
+     * Использует параметры из env_ (host, port)
      */
     virtual void start() = 0;
 
-    ServerConfig config_; ///< Конфигурация сервера
+    std::shared_ptr<IEnvironment> env_; ///< Конфигурация окружения
 };

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BoostBeastApplication.hpp"
-#include "ServerConfig.hpp"
 #include "IHttpHandler.hpp"
 #include <boost/di.hpp>
 #include <memory>
@@ -10,15 +9,25 @@
 
 namespace di = boost::di;
 
+/**
+ * @file RedirectServiceApp.hpp
+ * @brief Главный класс приложения переадресации
+ * @author Anton Tobolkin
+ */
+
+/**
+ * @class RedirectServiceApp
+ * @brief Приложение сервиса переадресации
+ */
 class RedirectServiceApp : public BoostBeastApplication
 {
 public:
-    RedirectServiceApp(const ServerConfig& config);
+    RedirectServiceApp();
     ~RedirectServiceApp() override;
 
 protected:
+    void loadEnvironment(int argc, char* argv[]) override;
     void configureInjection() override;
-    void configureRoutes() override;
     void handleRequest(
         const boost::beast::http::request<boost::beast::http::string_body>& req,
         boost::beast::http::response<boost::beast::http::string_body>& res) override;

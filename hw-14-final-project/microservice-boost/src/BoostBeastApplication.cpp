@@ -10,9 +10,8 @@ namespace http = beast::http;
 namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
 
-BoostBeastApplication::BoostBeastApplication(const ServerConfig& config)
-    : IWebApplication(config)
-    , running_(false)
+BoostBeastApplication::BoostBeastApplication()
+    : running_(false)
 {
     std::cout << "[App] BoostBeastApplication created" << std::endl;
 }
@@ -46,19 +45,23 @@ void BoostBeastApplication::start()
 {
     try
     {
+        // Получаем конфигурацию из окружения
+        std::string host = env_->get<std::string>("host");
+        int port = env_->get<int>("port");
+        
         std::cout << "[App] Starting HTTP server..." << std::endl;
         
         // Создаем IO контекст
         ioContext_ = std::make_unique<asio::io_context>();
 
         // Создаем endpoint
-        auto const address = asio::ip::make_address(config_.host);
-        tcp::endpoint endpoint{address, static_cast<unsigned short>(config_.port)};
+        auto const address = asio::ip::make_address(host);
+        tcp::endpoint endpoint{address, static_cast<unsigned short>(port)};
 
         // Создаем acceptor
         acceptor_ = std::make_unique<tcp::acceptor>(*ioContext_, endpoint);
 
-        std::cout << "[Server] Listening on " << config_.host << ":" << config_.port << std::endl;
+        std::cout << "[Server] Listening on " << host << ":" << port << std::endl;
         std::cout << "[Server] Server is ready to accept connections!" << std::endl;
 
         running_ = true;

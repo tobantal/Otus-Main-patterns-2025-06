@@ -1,4 +1,5 @@
 #include "RedirectServiceApp.hpp"
+#include "Environment.hpp"
 #include "handlers/GetUserHandler.hpp"
 #include "services/IUserService.hpp"
 #include "services/UserService.hpp"
@@ -8,8 +9,13 @@
 #include "BeastResponseAdapter.hpp"
 #include <iostream>
 
-RedirectServiceApp::RedirectServiceApp(const ServerConfig& config)
-    : BoostBeastApplication(config)
+/**
+ * @file RedirectServiceApp.cpp
+ * @brief Реализация главного класса приложения
+ * @author Anton Tobolkin
+ */
+
+RedirectServiceApp::RedirectServiceApp()
 {
     std::cout << "[RedirectServiceApp] Application created" << std::endl;
 }
@@ -17,6 +23,24 @@ RedirectServiceApp::RedirectServiceApp(const ServerConfig& config)
 RedirectServiceApp::~RedirectServiceApp()
 {
     std::cout << "[RedirectServiceApp] Application destroyed" << std::endl;
+}
+
+void RedirectServiceApp::loadEnvironment(int argc, char* argv[])
+{
+    std::cout << "[RedirectServiceApp] Loading environment..." << std::endl;
+    
+    // Игнорируем argc/argv в учебной версии
+    (void)argc;
+    (void)argv;
+    
+    // Создаем окружение с дефолтными значениями
+    env_ = std::make_shared<Environment>();
+    env_->setProperty("host", std::string("0.0.0.0"));
+    env_->setProperty("port", 8080);
+    
+    std::cout << "[RedirectServiceApp] Environment loaded: "
+              << "host=" << env_->get<std::string>("host") << ", "
+              << "port=" << env_->get<int>("port") << std::endl;
 }
 
 void RedirectServiceApp::configureInjection()
@@ -34,12 +58,6 @@ void RedirectServiceApp::configureInjection()
     
     std::cout << "[RedirectServiceApp] DI injector configured, registered " 
               << handlers_.size() << " handlers" << std::endl;
-}
-
-void RedirectServiceApp::configureRoutes()
-{
-    std::cout << "[RedirectServiceApp] Configuring routes..." << std::endl;
-    std::cout << "[RedirectServiceApp] Routes configured" << std::endl;
 }
 
 void RedirectServiceApp::handleRequest(

@@ -1,5 +1,4 @@
 #include "RedirectServiceApp.hpp"
-#include "ServerConfig.hpp"
 #include <iostream>
 #include <csignal>
 #include <memory>
@@ -21,7 +20,7 @@ void signalHandler(int signal)
 /**
  * @brief Точка входа в приложение
  */
-int main()
+int main(int argc, char* argv[])
 {
     try
     {
@@ -34,21 +33,17 @@ int main()
         std::cout << "========================================" << std::endl;
         std::cout << std::endl;
 
-        // Создаем конфигурацию сервера
-        ServerConfig config("0.0.0.0", 8080);
-
         // Создаем приложение
-        g_app = std::make_unique<RedirectServiceApp>(config);
+        g_app = std::make_unique<RedirectServiceApp>();
         
         std::cout << "========================================" << std::endl;
-        std::cout << "  Server will start on " << config.host << ":" << config.port << std::endl;
-        std::cout << "  Try: curl http://localhost:8080/api/users/1" << std::endl;
+        std::cout << "  Starting server..." << std::endl;
         std::cout << "  Press Ctrl+C to stop" << std::endl;
         std::cout << "========================================" << std::endl;
         std::cout << std::endl;
 
-        // Запуск (блокирующий вызов)
-        g_app->run();
+        // Запуск (блокирующий вызов) с передачей аргументов
+        g_app->run(argc, argv);
 
         std::cout << "[Main] Application stopped" << std::endl;
     }

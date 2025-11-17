@@ -1,7 +1,6 @@
 #pragma once
 
 #include "IWebApplication.hpp"
-#include "ServerConfig.hpp"
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -25,7 +24,7 @@ namespace asio = boost::asio;
 class BoostBeastApplication : public IWebApplication
 {
 public:
-    BoostBeastApplication(const ServerConfig& config);
+    BoostBeastApplication();
     virtual ~BoostBeastApplication();
 
     /**
@@ -36,6 +35,8 @@ public:
 protected:
     /**
      * @brief Запустить HTTP сервер
+     * 
+     * Получает host и port из env_
      */
     void start() override;
 
