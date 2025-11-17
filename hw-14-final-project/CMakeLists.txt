@@ -68,6 +68,22 @@ FetchContent_MakeAvailable(BoostDI)
 
 message(STATUS "Boost.DI successfully fetched")
 
+# ============================================================================
+# Добавляем nlohmann/json (header-only)
+# ============================================================================
+message(STATUS "Fetching nlohmann/json from GitHub...")
+
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(nlohmann_json)
+
+message(STATUS "nlohmann/json successfully fetched")
+
 # Добавляем подпроекты в порядке зависимостей
 message(STATUS "Adding microservice-core...")
 add_subdirectory(microservice-core)

@@ -7,13 +7,17 @@
 #include "repositories/InMemoryUserRepository.hpp"
 #include "BeastRequestAdapter.hpp"
 #include "BeastResponseAdapter.hpp"
+#include <nlohmann/json.hpp>
 #include <iostream>
+#include <fstream>
 
 /**
  * @file RedirectServiceApp.cpp
  * @brief Реализация главного класса приложения
  * @author Anton Tobolkin
  */
+
+using json = nlohmann::json;
 
 RedirectServiceApp::RedirectServiceApp()
 {
@@ -29,18 +33,72 @@ void RedirectServiceApp::loadEnvironment(int argc, char* argv[])
 {
     std::cout << "[RedirectServiceApp] Loading environment..." << std::endl;
     
-    // Игнорируем argc/argv в учебной версии
-    (void)argc;
-    (void)argv;
+    // Вызываем родительский метод для загрузки config.json
+    BoostBeastApplication::loadEnvironment(argc, argv);
     
-    // Создаем окружение с дефолтными значениями
-    env_ = std::make_shared<Environment>();
-    env_->setProperty("host", std::string("0.0.0.0"));
-    env_->setProperty("port", 8080);
+    // Валидируем обязательные параметры и устанавливаем дефолты
+    try
+    {
+        // Проверяем server.host
+        env_->get<std::string>("server.host");
+    }
+    catch (const std::exception&)
+    {
+        std::cout << "[RedirectServiceApp] server.host not found, using default: 0.0.0.0" << std::endl;
+        env_->setProperty("server.host", std::string("0.0.0.0"));
+    }
     
-    std::cout << "[RedirectServiceApp] Environment loaded: "
-              << "host=" << env_->get<std::string>("host") << ", "
-              << "port=" << env_->get<int>("port") << std::endl;
+    try
+    {
+        // Проверяем server.port
+        env_->get<int>("server.port");
+    }
+    catch (const std::exception&)
+    {
+        std::cout << "[RedirectServiceApp] server.port not found, using default: 8080" << std::endl;
+        env_->setProperty("server.port", 8080);
+    }
+    
+    try
+    {
+        // Проверяем cache.enabled
+        env_->get<bool>("cache.enabled");
+    }
+    catch (const std::exception&)
+    {
+        std::cout << "[RedirectServiceApp] cache.enabled not found, using default: true" << std::endl;
+        env_->setProperty("cache.enabled", true);
+    }
+    
+    try
+    {
+        // Проверяем cache.ttl
+        env_->get<int>("cache.ttl");
+    }
+    catch (const std::exception&)
+    {
+        std::cout << "[RedirectServiceApp] cache.ttl not found, using default: 3600" << std::endl;
+        env_->setProperty("cache.ttl", 3600);
+    }
+    
+    try
+    {
+        // Проверяем services.rule_service_url
+        env_->get<std::string>("services.rule_service_url");
+    }
+    catch (const std::exception&)
+    {
+        std::cout << "[RedirectServiceApp] services.rule_service_url not found, using default: http://localhost:8081" << std::endl;
+        env_->setProperty("services.rule_service_url", std::string("http://localhost:8081"));
+    }
+    
+    // Выводим загруженную конфигурацию
+    std::cout << "[RedirectServiceApp] Environment loaded:" << std::endl;
+    std::cout << "  server.host: " << env_->get<std::string>("server.host") << std::endl;
+    std::cout << "  server.port: " << env_->get<int>("server.port") << std::endl;
+    std::cout << "  cache.enabled: " << (env_->get<bool>("cache.enabled") ? "true" : "false") << std::endl;
+    std::cout << "  cache.ttl: " << env_->get<int>("cache.ttl") << std::endl;
+    std::cout << "  services.rule_service_url: " << env_->get<std::string>("services.rule_service_url") << std::endl;
 }
 
 void RedirectServiceApp::configureInjection()

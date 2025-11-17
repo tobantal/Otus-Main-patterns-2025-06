@@ -19,6 +19,7 @@ target_link_libraries(microservice-boost PUBLIC
     Boost::system
     Boost::beast
     Boost::asio
+    nlohmann_json::nlohmann_json
     pthread
 )
 

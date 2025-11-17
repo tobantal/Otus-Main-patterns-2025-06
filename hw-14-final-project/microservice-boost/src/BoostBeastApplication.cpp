@@ -1,9 +1,13 @@
 #include "BoostBeastApplication.hpp"
+#include "Environment.hpp"
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <iostream>
+#include <fstream>
 #include <thread>
+
+using json = nlohmann::json;
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -41,13 +45,99 @@ void BoostBeastApplication::stop()
     }
 }
 
+void BoostBeastApplication::loadEnvironment(int argc, char* argv[])
+{
+    std::cout << "[BoostBeastApplication] Loading environment..." << std::endl;
+    
+    // Игнорируем argc/argv (можно расширить позже)
+    (void)argc;
+    (void)argv;
+    
+    // Создаем окружение
+    env_ = std::make_shared<Environment>();
+    
+    // Пытаемся загрузить config.json
+    try
+    {
+        std::ifstream configFile("config.json");
+        
+        if (!configFile.is_open())
+        {
+            std::cout << "[BoostBeastApplication] config.json not found" << std::endl;
+            return;
+        }
+        
+        std::cout << "[BoostBeastApplication] Reading config.json..." << std::endl;
+        
+        json config = json::parse(configFile);
+        
+        // Рекурсивно загружаем весь JSON в Environment
+        loadJsonToEnvironment(config);
+        
+        std::cout << "[BoostBeastApplication] Configuration loaded from config.json" << std::endl;
+    }
+    catch (const json::parse_error& e)
+    {
+        std::cerr << "[BoostBeastApplication] JSON parse error: " << e.what() << std::endl;
+        throw;
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "[BoostBeastApplication] Error loading config: " << e.what() << std::endl;
+        throw;
+    }
+}
+
+void BoostBeastApplication::loadJsonToEnvironment(const json& j, const std::string& prefix)
+{
+    for (auto it = j.begin(); it != j.end(); ++it)
+    {
+        std::string key = prefix.empty() ? it.key() : prefix + "." + it.key();
+        
+        if (it->is_object())
+        {
+            // Рекурсивно обрабатываем вложенные объекты
+            loadJsonToEnvironment(*it, key);
+        }
+        else if (it->is_string())
+        {
+            env_->setProperty(key, it->get<std::string>());
+        }
+        else if (it->is_number_integer())
+        {
+            env_->setProperty(key, it->get<int>());
+        }
+        else if (it->is_number_unsigned())
+        {
+            env_->setProperty(key, static_cast<int>(it->get<unsigned int>()));
+        }
+        else if (it->is_boolean())
+        {
+            env_->setProperty(key, it->get<bool>());
+        }
+        else if (it->is_number_float())
+        {
+            env_->setProperty(key, it->get<double>());
+        }
+        else if (it->is_array())
+        {
+            // Массивы пока игнорируем (можно расширить)
+            std::cout << "[BoostBeastApplication] Skipping array: " << key << std::endl;
+        }
+        else if (it->is_null())
+        {
+            // null игнорируем
+        }
+    }
+}
+
 void BoostBeastApplication::start()
 {
     try
     {
         // Получаем конфигурацию из окружения
-        std::string host = env_->get<std::string>("host");
-        int port = env_->get<int>("port");
+        std::string host = env_->get<std::string>("server.host");
+        int port = env_->get<int>("server.port");
         
         std::cout << "[App] Starting HTTP server..." << std::endl;
         

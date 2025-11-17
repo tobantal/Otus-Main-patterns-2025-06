@@ -1,0 +1,13 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8080
+  },
+  "cache": {
+    "enabled": true,
+    "ttl": 3600
+  },
+  "services": {
+    "rule_service_url": "http://localhost:8081"
+  }
+}

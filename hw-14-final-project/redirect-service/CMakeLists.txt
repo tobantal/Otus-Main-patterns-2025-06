@@ -27,6 +27,7 @@ target_include_directories(redirect-service PRIVATE
 target_link_libraries(redirect-service PRIVATE
     microservice-boost
     microservice-core
+    nlohmann_json::nlohmann_json
 )
 
 # Требуем C++17
