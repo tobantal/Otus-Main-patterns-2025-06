@@ -8,14 +8,14 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wno-nonnull)
 endif()
 
-# Создаем исполняемый файл
-add_executable(redirect-service
-    main.cpp
-    src/RedirectServiceApp.cpp
-    src/handlers/GetUserHandler.cpp
-    src/services/UserService.cpp
-    src/repositories/InMemoryUserRepository.cpp
+# Собираем все cpp файлы рекурсивно
+file(GLOB_RECURSE REDIRECT_SERVICE_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
 )
+
+# Создаем исполняемый файл
+add_executable(redirect-service ${REDIRECT_SERVICE_SOURCES})
 
 # Подключаем заголовки
 target_include_directories(redirect-service PRIVATE
