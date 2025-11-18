@@ -27,30 +27,34 @@ jobs:
       
     - name: ⚙️ Build
       run: cmake --build build --config Debug
+    
+    - name: 📊 Capture baseline coverage
+      run: |
+        cd ${{ github.workspace }}/build
+        lcov --capture --initial --directory . --output-file coverage_base.info \
+          --ignore-errors mismatch \
+          --rc geninfo_unexecuted_blocks=1 || true
       
     - name: ✅ Run tests (verbose)
       run: |
         cd ${{ github.workspace }}
         ctest --test-dir build --output-on-failure --timeout 60 --verbose
     
-    - name: 📊 Generate coverage report
+    - name: 📊 Capture test coverage
       run: |
         cd ${{ github.workspace }}/build
-        lcov --capture --directory . --output-file coverage.info \
+        lcov --capture --directory . --output-file coverage_test.info \
           --ignore-errors mismatch \
           --rc geninfo_unexecuted_blocks=1 || true
-        lcov --remove coverage.info '/usr/*' '*/tests/*' '*/_deps/*' \
+        lcov --add-tracefile coverage_base.info \
+             --add-tracefile coverage_test.info \
+             --output-file coverage_total.info || true
+        lcov --remove coverage_total.info '/usr/*' '*/tests/*' '*/_deps/*' \
           --output-file coverage_filtered.info \
           --ignore-errors unused || true
         
-    - name: 📈 Coverage by file
+    - name: 📈 Coverage report
       run: |
         cd ${{ github.workspace }}/build
-        echo "=== COVERAGE BY FILE ==="
-        lcov --list coverage_filtered.info | grep -E "\.cpp|\.hpp" || true
-        
-    - name: 📊 Total coverage
-      run: |
-        cd ${{ github.workspace }}/build
-        echo "=== TOTAL COVERAGE ==="
-        lcov --summary coverage_filtered.info 2>&1 | grep -E "lines|functions" || true
+        echo "=== PROJECT COVERAGE ==="
+        lcov --list coverage_filtered.info
