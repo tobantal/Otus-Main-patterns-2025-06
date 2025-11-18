@@ -32,11 +32,13 @@ jobs:
       run: |
         cd ${{ github.workspace }}/build
         lcov --capture --directory . --output-file coverage.info --ignore-errors mismatch --rc geninfo_unexecuted_blocks=1
-        lcov --remove coverage.info '/usr/*' '*/test/*' '*/tests/*' '*/_deps/*' --output-file coverage_filtered.info
-        lcov --list coverage_filtered.info
-    
+        lcov --remove coverage.info '/usr/*' '*/tests/*' '*/_deps/*' --output-file coverage_filtered.info --ignore-errors unused
+        
     - name: 📈 Coverage summary
       run: |
         cd ${{ github.workspace }}/build
-        echo "=== COVERAGE SUMMARY ==="
+        echo "=== DETAILED COVERAGE BY FILE ==="
+        lcov --list coverage_filtered.info
+        echo ""
+        echo "=== OVERALL COVERAGE SUMMARY ==="
         lcov --summary coverage_filtered.info
