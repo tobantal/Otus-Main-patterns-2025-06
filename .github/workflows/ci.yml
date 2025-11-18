@@ -31,7 +31,7 @@ jobs:
     - name: 📊 Generate coverage report
       run: |
         cd ${{ github.workspace }}/build
-        lcov --capture --directory . --output-file coverage.info
+        lcov --capture --directory . --output-file coverage.info --ignore-errors mismatch --rc geninfo_unexecuted_blocks=1
         lcov --remove coverage.info '/usr/*' '*/test/*' '*/tests/*' '*/_deps/*' --output-file coverage_filtered.info
         lcov --list coverage_filtered.info
     
