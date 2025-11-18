@@ -18,7 +18,12 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y cmake g++ make lcov
       
     - name: 🏗 Configure CMake (with coverage)
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage"
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_CXX_FLAGS="--coverage -g -O0" \
+          -DCMAKE_EXE_LINKER_FLAGS="--coverage" \
+          -DCMAKE_SHARED_LINKER_FLAGS="--coverage"
       
     - name: ⚙️ Build
       run: cmake --build build --config Debug
@@ -31,14 +36,21 @@ jobs:
     - name: 📊 Generate coverage report
       run: |
         cd ${{ github.workspace }}/build
-        lcov --capture --directory . --output-file coverage.info --ignore-errors mismatch --rc geninfo_unexecuted_blocks=1
-        lcov --remove coverage.info '/usr/*' '*/tests/*' '*/_deps/*' --output-file coverage_filtered.info --ignore-errors unused
+        lcov --capture --directory . --output-file coverage.info \
+          --ignore-errors mismatch \
+          --rc geninfo_unexecuted_blocks=1 || true
+        lcov --remove coverage.info '/usr/*' '*/tests/*' '*/_deps/*' \
+          --output-file coverage_filtered.info \
+          --ignore-errors unused || true
         
-    - name: 📈 Coverage summary
+    - name: 📈 Coverage by file
       run: |
         cd ${{ github.workspace }}/build
-        echo "=== DETAILED COVERAGE BY FILE ==="
-        lcov --list coverage_filtered.info
-        echo ""
-        echo "=== OVERALL COVERAGE SUMMARY ==="
-        lcov --summary coverage_filtered.info
+        echo "=== COVERAGE BY FILE ==="
+        lcov --list coverage_filtered.info | grep -E "\.cpp|\.hpp" || true
+        
+    - name: 📊 Total coverage
+      run: |
+        cd ${{ github.workspace }}/build
+        echo "=== TOTAL COVERAGE ==="
+        lcov --summary coverage_filtered.info 2>&1 | grep -E "lines|functions" || true
