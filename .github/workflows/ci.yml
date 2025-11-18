@@ -22,39 +22,33 @@ jobs:
         cmake -B build \
           -DCMAKE_BUILD_TYPE=Debug \
           -DCMAKE_CXX_FLAGS="--coverage -g -O0" \
-          -DCMAKE_EXE_LINKER_FLAGS="--coverage" \
-          -DCMAKE_SHARED_LINKER_FLAGS="--coverage"
+          -DCMAKE_EXE_LINKER_FLAGS="--coverage"
       
     - name: ⚙️ Build
       run: cmake --build build --config Debug
-    
-    - name: 📊 Capture baseline coverage
-      run: |
-        cd ${{ github.workspace }}/build
-        lcov --capture --initial --directory . --output-file coverage_base.info \
-          --ignore-errors mismatch \
-          --rc geninfo_unexecuted_blocks=1 || true
       
-    - name: ✅ Run tests (verbose)
-      run: |
-        cd ${{ github.workspace }}
-        ctest --test-dir build --output-on-failure --timeout 60 --verbose
+    - name: ✅ Run tests
+      run: ctest --test-dir build --output-on-failure --timeout 60 --verbose
     
-    - name: 📊 Capture test coverage
+    - name: 📊 Generate coverage
       run: |
-        cd ${{ github.workspace }}/build
-        lcov --capture --directory . --output-file coverage_test.info \
-          --ignore-errors mismatch \
-          --rc geninfo_unexecuted_blocks=1 || true
-        lcov --add-tracefile coverage_base.info \
-             --add-tracefile coverage_test.info \
-             --output-file coverage_total.info || true
-        lcov --remove coverage_total.info '/usr/*' '*/tests/*' '*/_deps/*' \
+        cd build
+        lcov --capture --directory . --output-file coverage.info \
+          --ignore-errors mismatch,unused \
+          --rc geninfo_unexecuted_blocks=1
+        lcov --remove coverage.info \
+          '/usr/*' \
+          '*/tests/*' \
+          '*/_deps/*' \
+          '*/CMakeFiles/*' \
           --output-file coverage_filtered.info \
-          --ignore-errors unused || true
+          --ignore-errors unused
         
-    - name: 📈 Coverage report
+    - name: 📈 Show coverage
       run: |
-        cd ${{ github.workspace }}/build
-        echo "=== PROJECT COVERAGE ==="
-        lcov --list coverage_filtered.info
+        cd build
+        echo "=== FILES WITH TEST COVERAGE ==="
+        lcov --list coverage_filtered.info | grep -E "\.cpp|\.hpp" | grep -v "100.0%"
+        echo ""
+        echo "=== TOTAL ==="
+        lcov --summary coverage_filtered.info
