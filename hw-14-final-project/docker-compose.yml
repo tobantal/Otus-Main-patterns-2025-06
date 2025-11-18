@@ -1,0 +1,27 @@
+# Docker Compose для Redirect Service
+# Author: Anton Tobolkin
+# Расположение: hw-14-final-project/docker-compose.yml
+
+version: '3.8'
+
+services:
+  redirect-service:
+    build:
+      context: ..
+      dockerfile: hw-14-final-project/redirect-service/Dockerfile
+    container_name: redirect-service
+    ports:
+      - "8080:8080"
+    volumes:
+      # Опционально: монтируем конфиг из хоста (если нужно изменить без пересборки)
+      - ./redirect-service/config.json:/app/config.json:ro
+    restart: unless-stopped
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
