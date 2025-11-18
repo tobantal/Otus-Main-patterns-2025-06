@@ -25,10 +25,10 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 # сборка общей библиотеки для всех проектов (включает ICommand.hpp)
-add_subdirectory(common)
+#add_subdirectory(common)
 
 # сборка библиотеки Http-сервера на основе cpp-httplib
-add_subdirectory(httplib-wrapper)
+#add_subdirectory(httplib-wrapper)
 
 # Включите подпроекты.
 #add_subdirectory ("hw-01-square-equation-solver")

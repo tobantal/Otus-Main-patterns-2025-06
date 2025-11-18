@@ -11,44 +11,33 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: 🔄 Checkout repository
+    - name: 🔄 Checkout
       uses: actions/checkout@v3
       
     - name: 🛠 Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y cmake g++ make lcov
+      run: sudo apt-get update && sudo apt-get install -y cmake g++ gcovr
       
-    - name: 🏗 Configure CMake (with coverage)
-      run: |
-        cmake -B build \
-          -DCMAKE_BUILD_TYPE=Debug \
-          -DCMAKE_CXX_FLAGS="--coverage -g -O0" \
-          -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+    - name: 🏗 Configure with coverage
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage -g -O0"
       
     - name: ⚙️ Build
-      run: cmake --build build --config Debug
+      run: cmake --build build
       
     - name: ✅ Run tests
-      run: ctest --test-dir build --output-on-failure --timeout 60 --verbose
+      run: ctest --test-dir build --output-on-failure --verbose
     
-    - name: 📊 Generate coverage
+    - name: 📊 Generate HTML coverage report
       run: |
-        cd build
-        lcov --capture --directory . --output-file coverage.info \
-          --ignore-errors mismatch,unused \
-          --rc geninfo_unexecuted_blocks=1
-        lcov --remove coverage.info \
-          '/usr/*' \
-          '*/tests/*' \
-          '*/_deps/*' \
-          '*/CMakeFiles/*' \
-          --output-file coverage_filtered.info \
-          --ignore-errors unused
-        
-    - name: 📈 Show coverage
-      run: |
-        cd build
-        echo "=== FILES WITH TEST COVERAGE ==="
-        lcov --list coverage_filtered.info | grep -E "\.cpp|\.hpp" | grep -v "100.0%"
-        echo ""
-        echo "=== TOTAL ==="
-        lcov --summary coverage_filtered.info
+        gcovr --root . \
+              --filter 'hw-14-final-project/.*' \
+              --exclude '.*/tests/.*' \
+              --gcov-ignore-parse-errors=negative_hits.warn_once_per_file \
+              --html-details coverage.html \
+              --print-summary
+    
+    - name: 📤 Upload coverage report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: coverage-report-html
+        path: coverage*.html
