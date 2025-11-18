@@ -312,3 +312,41 @@ handler->handle(req, res);
 - [Boost.DI Documentation](https://boost-ext.github.io/di/)
 - [Boost.Beast Documentation](https://www.boost.org/doc/libs/master/libs/beast/doc/html/index.html)
 - [Clean Architecture by Robert Martin](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
+
+----
+
+# Что дополнительно сделали:
+1. Паттерн Universal Object
+
+Создали IEnvironment + Environment для гибкой конфигурации
+Типобезопасные геттеры с поддержкой дефолтных значений
+Расширяемость без изменения интерфейсов
+
+2. Рефакторинг Template Method
+
+Добавили loadEnvironment(argc, argv) в начало lifecycle
+Убрали пустой configureRoutes()
+Lifecycle: loadEnvironment() → configureInjection() → start()
+
+3. Удалили ServerConfig
+
+Заменили на универсальный Environment
+Готовность к 12-Factor App принципам
+
+4. Подробная документация
+
+Большой комментарий в loadEnvironment() о prod-реализации
+Описание всех этапов загрузки конфигурации
+
+🏗️ Текущая архитектура:
+```markdown
+IWebApplication (Template Method)
+    ↓
+    run(argc, argv) {
+        loadEnvironment(argc, argv)  // Universal Object
+        configureInjection()         // Boost.DI
+        start()                      // Boost.Beast
+    }
+```
+
+## Добавлена json-загрузка конфига для создания Environment.

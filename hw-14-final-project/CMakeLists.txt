@@ -87,6 +87,7 @@ message(STATUS "nlohmann/json successfully fetched")
 # Добавляем подпроекты в порядке зависимостей
 message(STATUS "Adding microservice-core...")
 add_subdirectory(microservice-core)
+add_subdirectory(microservice-core/tests)
 
 message(STATUS "Adding microservice-boost...")
 add_subdirectory(microservice-boost)

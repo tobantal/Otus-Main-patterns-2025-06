@@ -2,28 +2,41 @@
 
 on:
   push:
-    branches: [ master, develop, hw-11-state ]
+    branches: [ master, develop, smart-redirect-service ]
   pull_request:
     branches: [ master ]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
+    
     steps:
     - name: 🔄 Checkout repository
       uses: actions/checkout@v3
-
+      
     - name: 🛠 Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y cmake g++ make
-
-    - name: 🏗 Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
-
+      run: sudo apt-get update && sudo apt-get install -y cmake g++ make lcov
+      
+    - name: 🏗 Configure CMake (with coverage)
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage"
+      
     - name: ⚙️ Build
-      run: cmake --build build --config Release
-
+      run: cmake --build build --config Debug
+      
     - name: ✅ Run tests (verbose)
       run: |
         cd ${{ github.workspace }}
         ctest --test-dir build --output-on-failure --timeout 60 --verbose
+    
+    - name: 📊 Generate coverage report
+      run: |
+        cd ${{ github.workspace }}/build
+        lcov --capture --directory . --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' '*/test/*' '*/tests/*' '*/_deps/*' --output-file coverage_filtered.info
+        lcov --list coverage_filtered.info
+    
+    - name: 📈 Coverage summary
+      run: |
+        cd ${{ github.workspace }}/build
+        echo "=== COVERAGE SUMMARY ==="
+        lcov --summary coverage_filtered.info

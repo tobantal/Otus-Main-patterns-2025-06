@@ -1,14 +1,17 @@
-# Microservice Core Library - Интерфейсы для микросервисов
+# Microservice Core Library - Интерфейсы и утилиты
 # Author: Anton Tobolkin
 
 cmake_minimum_required(VERSION 3.14)
 
-# Header-only библиотека с интерфейсами
-add_library(microservice-core INTERFACE)
+# Создаем библиотеку с реализацией утилит
+add_library(microservice-core
+    src/RouteMatcher.cpp
+)
 
-target_include_directories(microservice-core INTERFACE
+# Подключаем заголовки
+target_include_directories(microservice-core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 # Требуем C++17
-target_compile_features(microservice-core INTERFACE cxx_std_17)
+target_compile_features(microservice-core PUBLIC cxx_std_17)
