@@ -11,8 +11,10 @@
  */
 struct BeastRequestAdapter : IRequest
 {
-    BeastRequestAdapter(const boost::beast::http::request<boost::beast::http::string_body> &req)
-        : req_(req) {}
+    BeastRequestAdapter(
+        const boost::beast::http::request<boost::beast::http::string_body>& req,
+        const std::string& clientIp)
+        : req_(req), clientIp_(clientIp) {}
 
     std::string getPath() const override
     {
@@ -60,7 +62,28 @@ struct BeastRequestAdapter : IRequest
         }
         return params;
     }
+    
+    std::map<std::string, std::string> getHeaders() const override
+    {
+        std::map<std::string, std::string> headers;
+        
+        // Итерируемся по всем заголовкам Beast-запроса
+        for (auto const& field : req_)
+        {
+            std::string name = std::string(field.name_string());
+            std::string value = std::string(field.value());
+            headers[name] = value;
+        }
+        
+        return headers;
+    }
+    
+    std::string getClientIp() const override
+    {
+        return clientIp_;
+    }
 
 private:
-    const boost::beast::http::request<boost::beast::http::string_body> &req_;
+    const boost::beast::http::request<boost::beast::http::string_body>& req_;
+    std::string clientIp_;
 };

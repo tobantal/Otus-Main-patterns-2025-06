@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <fstream>
+#include <boost/di.hpp>
 #include "adapters/InMemoryRuleClient.hpp"
 #include "services/RedirectService.hpp"
 #include "ports/IRedirectService.hpp"
@@ -14,23 +15,13 @@
 #include "RouteMatcher.hpp"
 #include "services/DSLEvaluator.hpp"
 
+namespace di = boost::di;
+
 /**
  * @file RedirectServiceApp.cpp
  * @brief Реализация главного класса приложения
  * @author Anton Tobolkin
  */
-
-using json = nlohmann::json;
-
-RedirectServiceApp::RedirectServiceApp()
-{
-    std::cout << "[RedirectServiceApp] Application created" << std::endl;
-}
-
-RedirectServiceApp::~RedirectServiceApp()
-{
-    std::cout << "[RedirectServiceApp] Application destroyed" << std::endl;
-}
 
 void RedirectServiceApp::loadEnvironment(int argc, char* argv[])
 {
@@ -39,7 +30,7 @@ void RedirectServiceApp::loadEnvironment(int argc, char* argv[])
     // Вызываем родительский метод для загрузки config.json
     BoostBeastApplication::loadEnvironment(argc, argv);
     
-    // Валидируем обязательные параметры и устанавливаем дефолты
+    // Устанавливаем значения по умолчанию, если не заданы
     try
     {
         // Проверяем server.host
@@ -124,7 +115,8 @@ void RedirectServiceApp::configureInjection()
 
 void RedirectServiceApp::handleRequest(
     const boost::beast::http::request<boost::beast::http::string_body>& beast_req,
-    boost::beast::http::response<boost::beast::http::string_body>& beast_res)
+    boost::beast::http::response<boost::beast::http::string_body>& beast_res,
+    const std::string& clientIp)
 {
     std::string method = std::string(beast_req.method_string());
     std::string target(beast_req.target());
@@ -141,39 +133,25 @@ void RedirectServiceApp::handleRequest(
     
     std::cout << "[RedirectServiceApp] Matching: " << requestKey << std::endl;
     
-    // Ищем подходящий паттерн
+    // Ищем подходящий хендлер по маршруту
     for (const auto& [pattern, handler] : handlers_)
     {
-        // Извлекаем путь из паттерна (убираем метод)
-        size_t colonPos = pattern.find(':');
-        if (colonPos == std::string::npos)
+        if (RouteMatcher::matches(pattern, requestKey))
         {
-            continue;
-        }
-        
-        std::string patternMethod = pattern.substr(0, colonPos);
-        std::string patternPath = pattern.substr(colonPos + 1);
-        
-        // Проверяем метод
-        if (patternMethod != method)
-        {
-            continue;
-        }
-        
-        // Проверяем путь с помощью RouteMatcher
-        if (RouteMatcher::matches(patternPath, path))
-        {
-            std::cout << "[RedirectServiceApp] Matched pattern: " << pattern << std::endl;
+            std::cout << "[RedirectServiceApp] Handler found: " << pattern << std::endl;
             
-            BeastRequestAdapter req(beast_req);
-            BeastResponseAdapter res(beast_res);
-            handler->handle(req, res);
-            beast_res.prepare_payload();
+            // Создаем адаптеры с IP клиента
+            BeastRequestAdapter reqAdapter(beast_req, clientIp);
+            BeastResponseAdapter resAdapter(beast_res);
+            
+            // Вызываем хендлер
+            handler->handle(reqAdapter, resAdapter);
             return;
         }
     }
     
-    std::cout << "[RedirectServiceApp] No matching handler for: " << requestKey << std::endl;
+    // Хендлер не найден - возвращаем 404
+    std::cout << "[RedirectServiceApp] No handler found for: " << requestKey << std::endl;
     beast_res.result(boost::beast::http::status::not_found);
     beast_res.set(boost::beast::http::field::content_type, "text/plain");
     beast_res.body() = "404 Not Found";

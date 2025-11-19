@@ -180,6 +180,19 @@ void BoostBeastApplication::handleSession(tcp::socket socket)
 {
     try
     {
+        // Извлекаем IP клиента из сокета
+        std::string clientIp = "0.0.0.0";
+        try
+        {
+            auto endpoint = socket.remote_endpoint();
+            clientIp = endpoint.address().to_string();
+            std::cout << "[Session] Client connected from: " << clientIp << std::endl;
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "[Session] Failed to get client IP: " << e.what() << std::endl;
+        }
+        
         beast::flat_buffer buffer;
 
         // Читаем HTTP запрос
@@ -194,8 +207,8 @@ void BoostBeastApplication::handleSession(tcp::socket socket)
         res.set(http::field::server, "BoostBeast");
         res.keep_alive(req.keep_alive());
 
-        // Передаем в переопределенный метод подкласса
-        handleRequest(req, res);
+        // Передаем в переопределенный метод подкласса с IP клиента
+        handleRequest(req, res, clientIp);
 
         // Отправляем ответ
         http::write(socket, res);

@@ -32,8 +32,24 @@ void RedirectHandler::handle(IRequest& req, IResponse& res)
     
     std::cout << "[RedirectHandler] Extracted shortId: " << shortId << std::endl;
     
-    // Строим запрос на редирект
-    RedirectRequest redirectReq{shortId};
+    // Строим запрос на редирект со всеми данными
+    RedirectRequest redirectReq{
+        shortId,
+        req.getClientIp(),
+        req.getHeaders()
+    };
+    
+    // Логируем контекст для отладки
+    std::cout << "[RedirectHandler] Client IP: " << redirectReq.ip << std::endl;
+    auto uaIt = redirectReq.headers.find("User-Agent");
+    if (uaIt != redirectReq.headers.end())
+    {
+        std::cout << "[RedirectHandler] User-Agent: " << uaIt->second << std::endl;
+    }
+    else
+    {
+        std::cout << "[RedirectHandler] User-Agent not found in headers" << std::endl;
+    }
     
     // Вызываем сервис
     auto result = redirectService_->redirect(redirectReq);

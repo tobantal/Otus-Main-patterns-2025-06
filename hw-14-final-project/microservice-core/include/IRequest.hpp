@@ -27,4 +27,14 @@ struct IRequest {
      * @brief Получить параметры запроса в виде ключ-значение
      */
     virtual std::map<std::string, std::string> getParams() const = 0;
+
+    /**
+     * @brief Получить HTTP-заголовки запроса
+     */
+    virtual std::map<std::string, std::string> getHeaders() const = 0;
+
+    /**
+     * @brief Получить IP-адрес клиента
+     */
+    virtual std::string getClientIp() const = 0;
 };
