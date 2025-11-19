@@ -6,13 +6,13 @@
 #include <iostream>
 #include <fstream>
 #include "adapters/InMemoryRuleClient.hpp"
-#include "adapters/AlwaysTrueDSLEvaluator.hpp"
 #include "services/RedirectService.hpp"
 #include "ports/IRedirectService.hpp"
 #include "ports/IRuleClient.hpp"
 #include "ports/IRuleEvaluator.hpp"
 #include "handlers/RedirectHandler.hpp"
 #include "RouteMatcher.hpp"
+#include "services/DSLEvaluator.hpp"
 
 /**
  * @file RedirectServiceApp.cpp
@@ -111,7 +111,7 @@ void RedirectServiceApp::configureInjection()
     // Создаем Boost.DI injector
     auto injector = di::make_injector(
         di::bind<IRuleClient>().to<InMemoryRuleClient>().in(di::singleton),
-        di::bind<IRuleEvaluator>().to<AlwaysTrueDSLEvaluator>().in(di::singleton),
+        di::bind<IRuleEvaluator>().to<DSLEvaluator>().in(di::singleton),
         di::bind<IRedirectService>().to<RedirectService>().in(di::singleton)
     );
     

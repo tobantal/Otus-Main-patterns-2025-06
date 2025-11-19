@@ -94,6 +94,7 @@ add_subdirectory(microservice-boost)
 
 message(STATUS "Adding redirect-service...")
 add_subdirectory(redirect-service)
+add_subdirectory(redirect-service/tests)
 
 message(STATUS "")
 message(STATUS "========================================")

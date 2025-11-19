@@ -8,27 +8,33 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wno-nonnull)
 endif()
 
-# Собираем все cpp файлы рекурсивно
-file(GLOB_RECURSE REDIRECT_SERVICE_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+# ============================================================================
+# Библиотека с бизнес-логикой (для тестов)
+# ============================================================================
+file(GLOB_RECURSE REDIRECT_SERVICE_LIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
 )
 
-# Создаем исполняемый файл
-add_executable(redirect-service ${REDIRECT_SERVICE_SOURCES})
+add_library(redirect-service-lib ${REDIRECT_SERVICE_LIB_SOURCES})
 
-# Подключаем заголовки
-target_include_directories(redirect-service PRIVATE
+target_include_directories(redirect-service-lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${boostdi_SOURCE_DIR}/include
 )
 
-# Линкуем с библиотеками
-target_link_libraries(redirect-service PRIVATE
+target_link_libraries(redirect-service-lib PUBLIC
     microservice-boost
     microservice-core
     nlohmann_json::nlohmann_json
 )
 
-# Требуем C++17
-target_compile_features(redirect-service PRIVATE cxx_std_17)
+target_compile_features(redirect-service-lib PUBLIC cxx_std_17)
+
+# ============================================================================
+# Исполняемый файл (только main.cpp)
+# ============================================================================
+add_executable(redirect-service ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+
+target_link_libraries(redirect-service PRIVATE
+    redirect-service-lib
+)

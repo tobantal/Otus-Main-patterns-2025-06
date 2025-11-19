@@ -9,14 +9,30 @@
 
 InMemoryRuleClient::InMemoryRuleClient()
 {
-    std::cout << "[InMemoryRuleClient] Initializing with hardcoded rules..." << std::endl;
+    std::cout << "[InMemoryRuleClient] Initializing with test rules..." << std::endl;
     
-    // Хардкод тестовых правил
-    rules_["promo"] = Rule{"promo", "https://example.com/promo", ""};
-    rules_["docs"] = Rule{"docs", "https://docs.example.com", ""};
-    rules_["blog"] = Rule{"blog", "https://blog.example.com", ""};
+    // Правило: работает только для Chrome
+    rules_["promo"] = Rule{
+        "promo",
+        "https://example.com/promo",
+        "browser == \"chrome\""  // ← реальное DSL-условие
+    };
     
-    std::cout << "[InMemoryRuleClient] Loaded " << rules_.size() << " rules" << std::endl;
+    // Правило: работает до 2026 года
+    rules_["docs"] = Rule{
+        "docs",
+        "https://docs.example.com",
+        "date < \"2026-01-01\""
+    };
+    
+    // Правило: всегда активно
+    rules_["blog"] = Rule{
+        "blog",
+        "https://blog.example.com",
+        "country == \"RU\""
+    };
+    
+    std::cout << "[InMemoryRuleClient] Loaded " << rules_.size() << " rules" << std::endl;    
 }
 
 std::optional<Rule> InMemoryRuleClient::findByKey(const std::string& key)
