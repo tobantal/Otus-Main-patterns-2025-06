@@ -12,9 +12,9 @@ InMemoryRuleClient::InMemoryRuleClient()
     std::cout << "[InMemoryRuleClient] Initializing with hardcoded rules..." << std::endl;
     
     // Хардкод тестовых правил
-    rules_["promo"] = Rule{"promo", "https://example.com/promo", "", 0, true};
-    rules_["docs"] = Rule{"docs", "https://docs.example.com", "", 0, true};
-    rules_["blog"] = Rule{"blog", "https://blog.example.com", "", 0, true};
+    rules_["promo"] = Rule{"promo", "https://example.com/promo", ""};
+    rules_["docs"] = Rule{"docs", "https://docs.example.com", ""};
+    rules_["blog"] = Rule{"blog", "https://blog.example.com", ""};
     
     std::cout << "[InMemoryRuleClient] Loaded " << rules_.size() << " rules" << std::endl;
 }

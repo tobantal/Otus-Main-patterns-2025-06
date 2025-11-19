@@ -17,6 +17,4 @@ struct Rule
     std::string key;           ///< Короткий ID (например "promo", "docs")
     std::string targetUrl;     ///< Целевой URL для редиректа
     std::string condition;     ///< DSL условие (например "browser == chrome")
-    int priority;              ///< Приоритет применения (чем меньше, тем выше)
-    bool isActive;             ///< Активно ли правило
 };

@@ -1,10 +1,5 @@
 #include "RedirectServiceApp.hpp"
 #include "Environment.hpp"
-#include "handlers/GetUserHandler.hpp"
-#include "services/IUserService.hpp"
-#include "services/UserService.hpp"
-#include "repositories/IUserRepository.hpp"
-#include "repositories/InMemoryUserRepository.hpp"
 #include "BeastRequestAdapter.hpp"
 #include "BeastResponseAdapter.hpp"
 #include <nlohmann/json.hpp>
@@ -115,19 +110,12 @@ void RedirectServiceApp::configureInjection()
     
     // Создаем Boost.DI injector
     auto injector = di::make_injector(
-        // Старые зависимости (User)
-        // FIXME: удалить
-        di::bind<IUserRepository>().to<InMemoryUserRepository>().in(di::singleton),
-        di::bind<IUserService>().to<UserService>().in(di::singleton),
-        
-        // Новые зависимости (Redirect)
         di::bind<IRuleClient>().to<InMemoryRuleClient>().in(di::singleton),
         di::bind<IRuleEvaluator>().to<AlwaysTrueDSLEvaluator>().in(di::singleton),
         di::bind<IRedirectService>().to<RedirectService>().in(di::singleton)
     );
     
     // Регистрируем хендлеры
-    handlers_["GET:/api/users/*"] = injector.create<std::shared_ptr<GetUserHandler>>();
     handlers_["GET:/r/*"] = injector.create<std::shared_ptr<RedirectHandler>>();
     
     std::cout << "[RedirectServiceApp] DI injector configured, registered " 

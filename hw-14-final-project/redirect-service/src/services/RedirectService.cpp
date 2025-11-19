@@ -29,13 +29,6 @@ RedirectResult RedirectService::redirect(const RedirectRequest& req)
         return RedirectResult{false, "", "Rule not found for key: " + req.shortId};
     }
     
-    // Проверяем активность правила
-    if (!rule->isActive)
-    {
-        std::cout << "[RedirectService] Rule is inactive" << std::endl;
-        return RedirectResult{false, "", "Rule is inactive"};
-    }
-    
     // Оцениваем DSL условие
     bool conditionMet = evaluator_->evaluate(rule->condition, req);
     

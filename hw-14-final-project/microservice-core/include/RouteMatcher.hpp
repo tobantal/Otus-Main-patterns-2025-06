@@ -11,20 +11,15 @@
 
 /**
  * @class RouteMatcher
- * @brief Проверяет соответствие пути паттерну с wildcard (*)
- * 
- * Паттерн: "GET:/r/*" означает один сегмент после /r
- * Примеры:
- * - "/r/promo" matches "/r/*"
- * - "/r/abc/123" не matches "/r/*"
+ * @brief Проверяет соответствие пути паттерну
  */
 class RouteMatcher
 {
 public:
     /**
      * @brief Проверить соответствие пути паттерну
-     * @param pattern Паттерн с wildcard (например "/r/*")
-     * @param path Путь для проверки (например "/r/promo")
+     * @param pattern Паттерн с wildcard (например, /r/*)
+     * @param path Путь для проверки (например, /r/promo)
      * @return true если путь соответствует паттерну
      */
     static bool matches(const std::string& pattern, const std::string& path);
