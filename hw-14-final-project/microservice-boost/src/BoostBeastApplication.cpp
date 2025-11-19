@@ -1,4 +1,6 @@
 #include "BoostBeastApplication.hpp"
+#include "BeastRequestAdapter.hpp"
+#include "BeastResponseAdapter.hpp"
 #include "Environment.hpp"
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -207,8 +209,8 @@ void BoostBeastApplication::handleSession(tcp::socket socket)
         res.set(http::field::server, "BoostBeast");
         res.keep_alive(req.keep_alive());
 
-        // Передаем в переопределенный метод подкласса с IP клиента
-        handleRequest(req, res, clientIp);
+        // ЕДИНСТВЕННОЕ ИЗМЕНЕНИЕ: вызываем handleBeastRequest вместо прямого handleRequest
+        handleBeastRequest(req, res, clientIp);
 
         // Отправляем ответ
         http::write(socket, res);
@@ -237,4 +239,18 @@ void BoostBeastApplication::handleSession(tcp::socket socket)
     {
         std::cerr << "[Session] Unexpected error: " << e.what() << std::endl;
     }
+}
+
+// НОВЫЙ МЕТОД - создает адаптеры и вызывает виртуальный handleRequest
+void BoostBeastApplication::handleBeastRequest(
+    const http::request<http::string_body>& req,
+    http::response<http::string_body>& res,
+    const std::string& clientIp)
+{
+    // Создаем адаптеры
+    BeastRequestAdapter requestAdapter(req, clientIp);
+    BeastResponseAdapter responseAdapter(res);
+    
+    // Вызываем виртуальный метод
+    handleRequest(requestAdapter, responseAdapter);
 }

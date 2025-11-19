@@ -96,6 +96,10 @@ message(STATUS "Adding redirect-service...")
 add_subdirectory(redirect-service)
 add_subdirectory(redirect-service/tests)
 
+message(STATUS "Adding rule-service...")
+add_subdirectory(rule-service)
+#add_subdirectory(redirect-service/tests)
+
 message(STATUS "")
 message(STATUS "========================================")
 message(STATUS "  Configuration completed successfully ")

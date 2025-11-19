@@ -1,0 +1,16 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8081
+  },
+  "db": {
+    "host": "localhost",
+    "port": 5432,
+    "name": "redirect_db",
+    "user": "redirect_user",
+    "password": "redirect_pass"
+  },
+  "redirect_service": {
+    "url": "http://localhost:8080"
+  }
+}

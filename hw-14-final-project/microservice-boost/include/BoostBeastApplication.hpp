@@ -1,46 +1,50 @@
 #pragma once
-
 #include "IWebApplication.hpp"
-#include "IEnvironment.hpp"
-#include <boost/beast/http.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/beast/http.hpp>
 #include <nlohmann/json.hpp>
 #include <memory>
 #include <string>
 
+class IRequest;
+class IResponse;
+
 /**
  * @file BoostBeastApplication.hpp
- * @brief Базовый класс приложения на Boost.Beast
+ * @brief Базовый класс для HTTP-приложений на Boost.Beast
  * @author Anton Tobolkin
  */
+
 class BoostBeastApplication : public IWebApplication
 {
 public:
     BoostBeastApplication();
     virtual ~BoostBeastApplication();
 
-    void loadEnvironment(int argc, char* argv[]) override;
     void start() override;
     void stop();
-
-    std::shared_ptr<IEnvironment> getEnvironment() const
-    {
-        return env_;
-    }
+    void loadEnvironment(int argc, char* argv[]) override;
 
 protected:
-    void handleSession(boost::asio::ip::tcp::socket socket);
+    /**
+     * @brief Обработать HTTP-запрос (работа с абстракциями)
+     */
+    virtual void handleRequest(IRequest& req, IResponse& res) = 0;
 
-    virtual void handleRequest(
-        const boost::beast::http::request<boost::beast::http::string_body>& req,
-        boost::beast::http::response<boost::beast::http::string_body>& res,
-        const std::string& clientIp) = 0;
-    
-    void loadJsonToEnvironment(const nlohmann::json& j, const std::string& prefix = "");
-
-protected:
-    std::shared_ptr<IEnvironment> env_;
+private:
     std::unique_ptr<boost::asio::io_context> ioContext_;
     std::unique_ptr<boost::asio::ip::tcp::acceptor> acceptor_;
     bool running_;
+
+    void handleSession(boost::asio::ip::tcp::socket socket);
+    void loadJsonToEnvironment(const nlohmann::json& j, const std::string& prefix = "");
+    
+    /**
+     * @brief Внутренний метод - создает адаптеры и вызывает виртуальный handleRequest
+     */
+    void handleBeastRequest(
+        const boost::beast::http::request<boost::beast::http::string_body>& req,
+        boost::beast::http::response<boost::beast::http::string_body>& res,
+        const std::string& clientIp);
 };
