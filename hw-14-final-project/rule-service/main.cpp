@@ -23,9 +23,7 @@ void signalHandler(int signal)
 int main(int argc, char* argv[])
 {
     try
-    {
-        std::cout << "=== Rule Service Starting ===" << std::endl;
-        
+    { 
         // Создаем приложение
         RuleServiceApp app;
         g_app = &app;
@@ -33,6 +31,12 @@ int main(int argc, char* argv[])
         // Устанавливаем обработчики сигналов
         std::signal(SIGINT, signalHandler);
         std::signal(SIGTERM, signalHandler);
+
+        std::cout << "========================================" << std::endl;
+        std::cout << "  Starting server..." << std::endl;
+        std::cout << "  Press Ctrl+C to stop" << std::endl;
+        std::cout << "========================================" << std::endl;
+        std::cout << std::endl;
         
         // Запускаем приложение
         app.run(argc, argv);

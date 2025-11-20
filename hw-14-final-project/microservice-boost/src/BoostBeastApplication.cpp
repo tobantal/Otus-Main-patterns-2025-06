@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
+#include "RouteMatcher.hpp"
 
 using json = nlohmann::json;
 
@@ -241,7 +242,7 @@ void BoostBeastApplication::handleSession(tcp::socket socket)
     }
 }
 
-// НОВЫЙ МЕТОД - создает адаптеры и вызывает виртуальный handleRequest
+// метод создает адаптеры и вызывает виртуальный handleRequest
 void BoostBeastApplication::handleBeastRequest(
     const http::request<http::string_body>& req,
     http::response<http::string_body>& res,
@@ -253,4 +254,72 @@ void BoostBeastApplication::handleBeastRequest(
     
     // Вызываем виртуальный метод
     handleRequest(requestAdapter, responseAdapter);
+}
+
+void BoostBeastApplication::handleRequest(IRequest& req, IResponse& res)
+{
+    std::string path = req.getPath();
+    std::string method = req.getMethod();
+
+    std::cout << "[BoostBeastApplication] " << method << " " << path
+              << " from " << req.getClientIp() << std::endl;
+
+    auto handler = findHandler(method, path);
+
+    if (handler)
+    {
+        try
+        {
+            handler->handle(req, res);
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "[BoostBeastApplication] Handler error: " << e.what() << std::endl;
+            res.setStatus(500);
+            res.setHeader("Content-Type", "application/json");
+            res.setBody(R"({"error": "Internal server error"})");
+        }
+    }
+    else
+    {
+        std::cout << "[BoostBeastApplication] No handler found" << std::endl;
+
+        res.setStatus(404);
+        res.setHeader("Content-Type", "application/json");
+        res.setBody(R"({"error": "Not found"})");
+    }
+}
+
+std::shared_ptr<IHttpHandler> BoostBeastApplication::findHandler(
+    const std::string& method,
+    const std::string& path)
+{
+    std::string exactKey = getHandlerKey(method, path);
+    auto it = handlers_.find(exactKey);
+    if (it != handlers_.end())
+    {
+        return it->second;
+    }
+
+    for (const auto& [key, handler] : handlers_)
+    {
+        size_t methodDelimiter = key.find(':');
+        if (methodDelimiter == std::string::npos)
+            continue;
+
+        std::string handlerMethod = key.substr(0, methodDelimiter);
+        std::string handlerPattern = key.substr(methodDelimiter + 1);
+
+        if (handlerMethod == method && RouteMatcher::matches(handlerPattern, path))
+        {
+            return handler;
+        }
+    }
+
+    return nullptr;
+}
+
+std::string BoostBeastApplication::getHandlerKey(const std::string& method, const std::string& pattern) const
+{
+    return method + ":" + pattern;
 }

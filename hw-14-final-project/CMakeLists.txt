@@ -92,10 +92,9 @@ add_subdirectory(microservice-core/tests)
 message(STATUS "Adding microservice-boost...")
 add_subdirectory(microservice-boost)
 
-#TODO: временное отключение redirect-service
-#message(STATUS "Adding redirect-service...")
-#add_subdirectory(redirect-service)
-#add_subdirectory(redirect-service/tests)
+message(STATUS "Adding redirect-service...")
+add_subdirectory(redirect-service)
+add_subdirectory(redirect-service/tests)
 
 message(STATUS "Adding rule-service...")
 add_subdirectory(rule-service)
