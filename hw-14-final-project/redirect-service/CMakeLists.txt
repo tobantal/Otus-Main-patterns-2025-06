@@ -20,6 +20,8 @@ add_library(redirect-service-lib ${REDIRECT_SERVICE_LIB_SOURCES})
 target_include_directories(redirect-service-lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${boostdi_SOURCE_DIR}/include
+    ${microservice_core_SOURCE_DIR}/include
+    ${microservice_boost_SOURCE_DIR}/include
 )
 
 target_link_libraries(redirect-service-lib PUBLIC

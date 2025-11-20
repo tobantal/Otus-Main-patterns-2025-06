@@ -1,6 +1,6 @@
 #include "RedirectServiceApp.hpp"
 #include <boost/di.hpp>
-#include "adapters/InMemoryRuleClient.hpp"
+#include "adapters/HttpRuleClient.hpp"
 #include "services/RedirectService.hpp"
 #include "ports/IRedirectService.hpp"
 #include "ports/IRuleClient.hpp"
@@ -8,8 +8,16 @@
 #include "handlers/RedirectHandler.hpp"
 #include "RouteMatcher.hpp"
 #include "services/DSLEvaluator.hpp"
+#include "IEnvironment.hpp"
+#include "settings/IRuleServiceSettings.hpp"
+#include "settings/RuleServiceSettings.hpp"
+#include "IHttpClient.hpp"
+#include "BeastRequestAdapter.hpp"
+#include <Environment.hpp>
+#include <HttpClient.hpp>
 
 namespace di = boost::di;
+
 
 /**
  * @file RedirectServiceApp.cpp
@@ -31,14 +39,17 @@ void RedirectServiceApp::configureInjection()
 {
     std::cout << "[RedirectServiceApp] Configuring DI injector..." << std::endl;
 
-    // Создаем Boost.DI injector
     auto injector = di::make_injector(
-        di::bind<IRuleClient>().to<InMemoryRuleClient>().in(di::singleton),
+        di::bind<IEnvironment>().to(env_),
+        di::bind<IRuleServiceSettings>().to<RuleServiceSettings>().in(di::singleton),
+        di::bind<IHttpClient>().to<HttpClient>().in(di::singleton),
+        di::bind<IRuleClient>().to<HttpRuleClient>().in(di::singleton),
         di::bind<IRuleEvaluator>().to<DSLEvaluator>().in(di::singleton),
-        di::bind<IRedirectService>().to<RedirectService>().in(di::singleton));
+        di::bind<IRedirectService>().to<RedirectService>().in(di::singleton)
+    );
 
-    // Регистрируем хендлеры через injector
-    handlers_[getHandlerKey("GET", "/r/*")] = injector.create<std::shared_ptr<RedirectHandler>>();
+    handlers_[getHandlerKey("GET", "/r/*")] = 
+        injector.create<std::shared_ptr<RedirectHandler>>();
 
     std::cout << "[RedirectServiceApp] DI injector configured, registered "
               << handlers_.size() << " handlers" << std::endl;

@@ -35,7 +35,7 @@ void RedirectHandler::handle(IRequest& req, IResponse& res)
     // Строим запрос на редирект со всеми данными
     RedirectRequest redirectReq{
         shortId,
-        req.getClientIp(),
+        req.getIp(),
         req.getHeaders()
     };
     

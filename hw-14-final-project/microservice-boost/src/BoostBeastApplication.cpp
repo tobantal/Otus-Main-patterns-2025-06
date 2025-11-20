@@ -105,7 +105,9 @@ void BoostBeastApplication::loadJsonToEnvironment(const json& j, const std::stri
         }
         else if (it->is_string())
         {
-            env_->setProperty(key, it->get<std::string>());
+            std::string value = it->get<std::string>();
+            std::cout << "[BoostBeastApplication] Setting: " << key << " = " << value << std::endl;
+            env_->setProperty(key, value);
         }
         else if (it->is_number_integer())
         {
@@ -263,7 +265,7 @@ void BoostBeastApplication::handleRequest(IRequest& req, IResponse& res)
     std::string method = req.getMethod();
 
     std::cout << "[BoostBeastApplication] " << method << " " << path
-              << " from " << req.getClientIp() << std::endl;
+              << " from " << req.getIp() << std::endl;
 
     auto handler = findHandler(method, path);
 

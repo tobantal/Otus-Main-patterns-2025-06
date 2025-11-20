@@ -34,7 +34,12 @@ struct IRequest {
     virtual std::map<std::string, std::string> getHeaders() const = 0;
 
     /**
-     * @brief Получить IP-адрес клиента
+     * @brief Получить IP-адрес (клиента при входящем сообщении, получателя при исходящем)
      */
-    virtual std::string getClientIp() const = 0;
+    virtual std::string getIp() const = 0;
+
+    /**
+     * @brief Получить порт (для входящих - 80 по умолчанию, для исходящих - целевой порт)
+     */
+    virtual int getPort() const = 0;
 };

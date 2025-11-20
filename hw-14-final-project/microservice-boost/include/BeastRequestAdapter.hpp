@@ -1,3 +1,4 @@
+// BeastRequestAdapter.hpp
 #pragma once
 #include "IRequest.hpp"
 #include <boost/beast/http.hpp>
@@ -14,7 +15,7 @@ struct BeastRequestAdapter : IRequest
     BeastRequestAdapter(
         const boost::beast::http::request<boost::beast::http::string_body>& req,
         const std::string& clientIp)
-        : req_(req), clientIp_(clientIp) {}
+        : req_(req), ip_(clientIp) {}
 
     std::string getPath() const override
     {
@@ -67,7 +68,6 @@ struct BeastRequestAdapter : IRequest
     {
         std::map<std::string, std::string> headers;
         
-        // Итерируемся по всем заголовкам Beast-запроса
         for (auto const& field : req_)
         {
             std::string name = std::string(field.name_string());
@@ -78,12 +78,17 @@ struct BeastRequestAdapter : IRequest
         return headers;
     }
     
-    std::string getClientIp() const override
+    std::string getIp() const override
     {
-        return clientIp_;
+        return ip_;
+    }
+
+    int getPort() const override
+    {
+        return 80;
     }
 
 private:
     const boost::beast::http::request<boost::beast::http::string_body>& req_;
-    std::string clientIp_;
+    std::string ip_;
 };
