@@ -5,7 +5,9 @@
 #include <nlohmann/json.hpp>
 #include <regex>
 
+
 using json = nlohmann::json;
+
 
 std::pair<std::string, int> parseUrl(const std::string &url)
 {
@@ -22,16 +24,27 @@ std::pair<std::string, int> parseUrl(const std::string &url)
     throw std::runtime_error("Invalid URL format: " + url);
 }
 
+
 HttpRuleClient::HttpRuleClient(std::shared_ptr<IHttpClient> httpClient,
-                               std::shared_ptr<IRuleServiceSettings> settings)
-    : httpClient_(httpClient), settings_(settings)
+                               std::shared_ptr<IRuleServiceSettings> settings,
+                               std::shared_ptr<IRulesCache> cache)
+    : httpClient_(httpClient), settings_(settings), cache_(cache)
 {
 }
+
 
 std::optional<Rule> HttpRuleClient::findByKey(const std::string &key)
 {
     try
     {
+        // Проверяем кэш
+        auto cachedRule = cache_->find(key);
+        if (cachedRule)
+        {
+            std::cout << "[HttpRuleClient] Found rule in cache: " << key << std::endl;
+            return cachedRule;
+        }
+
         std::cout << "[HttpRuleClient] Fetching rule by key: " << key << std::endl;
 
         auto [host, port] = parseUrl(settings_->getUrl());
@@ -65,7 +78,10 @@ std::optional<Rule> HttpRuleClient::findByKey(const std::string &key)
             data["targetUrl"].get<std::string>(),
             data["condition"].get<std::string>()};
 
-        std::cout << "[HttpRuleClient] Rule found: " << rule.key << std::endl;
+        // Кэшируем результат
+        cache_->put(key, rule);
+        std::cout << "[HttpRuleClient] Rule cached: " << rule.key << std::endl;
+
         return rule;
     }
     catch (const std::exception &e)
