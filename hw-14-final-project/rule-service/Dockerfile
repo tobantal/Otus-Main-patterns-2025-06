@@ -15,7 +15,7 @@ WORKDIR /app
 COPY . .
 
 WORKDIR /app/build
-RUN cmake .. && cmake --build . --target rule-service && cp rule-service /tmp/rule-service
+RUN cmake .. && cmake --build . --target rule-service
 
 # Stage 2: Runtime
 FROM ubuntu:22.04 as stage-1
@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY --from=builder /tmp/rule-service ./rule-service
+COPY --from=builder /app/build/rule-service/rule-service ./rule-service
 COPY hw-14-final-project/rule-service/config.json .
 
 # Открываем порт

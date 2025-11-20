@@ -20,7 +20,7 @@ find_package(PostgreSQL REQUIRED)
 FetchContent_Declare(
     libpqxx
     GIT_REPOSITORY https://github.com/jtv/libpqxx.git
-    GIT_TAG 7.9.2  # Стабильная версия, можно обновить
+    GIT_TAG 7.9.2
 )
 
 # Опции для libpqxx (отключаем ненужное)
@@ -62,4 +62,11 @@ add_executable(rule-service ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
 target_link_libraries(rule-service PRIVATE
     rule-service-lib
+)
+
+# ============================================================================
+# Явно указываем директорию вывода для бинарника
+# ============================================================================
+set_target_properties(rule-service PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/rule-service"
 )

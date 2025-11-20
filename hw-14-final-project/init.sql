@@ -1,3 +1,6 @@
+-- Подключаемся к БД
+\connect redirect_db
+
 -- Инициализация БД для rule-service
 CREATE TABLE IF NOT EXISTS rules (
     id SERIAL PRIMARY KEY,

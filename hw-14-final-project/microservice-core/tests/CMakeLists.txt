@@ -19,6 +19,7 @@ FetchContent_MakeAvailable(googletest)
 # Create test executable
 add_executable(microservice-core-test
     RouteMatcherTest.cpp
+    ThreadSafeMapTest.cpp
 )
 
 target_link_libraries(microservice-core-test

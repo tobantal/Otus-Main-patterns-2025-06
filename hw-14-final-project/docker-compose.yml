@@ -2,8 +2,6 @@
 # Author: Anton Tobolkin
 # Расположение: hw-14-final-project/docker-compose.yml
 
-version: '3.8'
-
 services:
   # PostgreSQL база данных для rule-service
   postgres:
@@ -16,12 +14,10 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      # Persistent storage для БД
       - postgres-data:/var/lib/postgresql/data
-      # Инициализационный скрипт
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U redirect_user"]
+      test: ["CMD-SHELL", "pg_isready -U redirect_user -d redirect_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -42,20 +38,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=8081
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=redirect_db
-      - DB_USER=redirect_user
-      - DB_PASSWORD=redirect_pass
-      - REDIRECT_SERVICE_URL=http://redirect-service:8080
     networks:
       - microservices-network
     restart: on-failure
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/rules"]
+      test: ["CMD", "curl", "-f", "http://rule-service:8081/rules"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -70,9 +57,6 @@ services:
       - "8080:8080"
     volumes:
       - ./redirect-service/config.json:/app/config.json:ro
-    environment:
-      - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=8080
     networks:
       - microservices-network
     depends_on:
@@ -80,7 +64,7 @@ services:
         condition: service_healthy
     restart: on-failure
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      test: ["CMD", "curl", "-f", "http://redirect-service:8080"]
       interval: 10s
       timeout: 5s
       retries: 5
