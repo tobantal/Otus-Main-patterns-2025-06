@@ -14,6 +14,9 @@
 #include "IResponse.hpp"
 #include <boost/di.hpp>
 #include <iostream>
+#include "settings/DbSettings.hpp"
+#include "settings/CacheInvalidatorSettings.hpp"
+#include <adapters/InMemoryRuleRepository.hpp>
 
 namespace di = boost::di;
 
@@ -37,86 +40,61 @@ void RuleServiceApp::configureInjection()
 {
     std::cout << "[RuleServiceApp] Configuring DI injector..." << std::endl;
 
-    // TODO: создаем Environment как биндинг в DI
-    
-    // Получаем параметры из окружения
-    // FIXME: вся это логика должна быть в RepositoryConfig (см. ниже)
-    std::string dbHost = env_->get<std::string>("db.host");
-    int dbPort = env_->get<int>("db.port");
-    std::string dbName = env_->get<std::string>("db.name");
-    std::string dbUser = env_->get<std::string>("db.user");
-    std::string dbPassword = env_->get<std::string>("db.password");
-    std::string connectionString = 
-        "host=" + dbHost + 
-        " port=" + std::to_string(dbPort) +
-        " dbname=" + dbName +
-        " user=" + dbUser +
-        " password=" + dbPassword;
-    
-    std::string redirectServiceUrl = env_->get<std::string>("redirect_service.url");
-    
-    std::cout << "[RuleServiceApp] Database: " << dbHost << ":" << dbPort << "/" << dbName << std::endl;
-    std::cout << "[RuleServiceApp] Redirect service: " << redirectServiceUrl << std::endl;
-    
-    // Создаем адаптеры с параметрами (они не могут быть созданы DI без параметров)
-    // FIXME: добавить адаптеры, на самом деле могут быть созданы
-    // PostgreSQLRuleRepository принимает RepositoryConfig, который в конструктор принимает Environment
-    // RepositoryConfig - адаптер, который может быть создан DI
-    // DI работает так: Environment -> RepositoryConfig -> PostgreSQLRuleRepository
-    auto repository = std::make_shared<PostgreSQLRuleRepository>(connectionString);
-    // FIXME: в HttpCacheInvalidator инжектим CacheInvalidatorConfig(Environment)
-    auto cacheInvalidator = std::make_shared<HttpCacheInvalidator>(redirectServiceUrl);
-    
-    // Создаем Boost.DI injector с instances
+    // Всё создаётся через DI
     auto injector = di::make_injector(
-        di::bind<IRuleRepository>().to(repository),
-        di::bind<ICacheInvalidator>().to(cacheInvalidator),
-        di::bind<IRuleService>().to<RuleService>().in(di::singleton)
-    );
-    
+        di::bind<IEnvironment>().to(env_),
+        di::bind<IDbSettings>().to<DbSettings>().in(di::singleton),
+        di::bind<ICacheInvalidatorSettings>().to<CacheInvalidatorSettings>().in(di::singleton),
+        //di::bind<IRuleRepository>().to<PostgreSQLRuleRepository>().in(di::singleton),
+        di::bind<IRuleRepository>().to<InMemoryRuleRepository>().in(di::singleton),
+        di::bind<ICacheInvalidator>().to<HttpCacheInvalidator>().in(di::singleton),
+        di::bind<IRuleService>().to<RuleService>().in(di::singleton));
+
     // Регистрируем хендлеры через injector
-    handlers_[getHandlerKey("POST", "/rules")] = 
+    handlers_[getHandlerKey("POST", "/rules")] =
         injector.create<std::shared_ptr<CreateRuleHandler>>();
-    
-    handlers_[getHandlerKey("GET", "/rules/*")] = 
+
+    handlers_[getHandlerKey("GET", "/rules/*")] =
         injector.create<std::shared_ptr<GetRuleHandler>>();
-    
-    handlers_[getHandlerKey("GET", "/rules")] = 
+
+    handlers_[getHandlerKey("GET", "/rules")] =
         injector.create<std::shared_ptr<ListRulesHandler>>();
-    
-    handlers_[getHandlerKey("PUT", "/rules/*")] = 
+
+    handlers_[getHandlerKey("PUT", "/rules/*")] =
         injector.create<std::shared_ptr<UpdateRuleHandler>>();
-    
-    handlers_[getHandlerKey("DELETE", "/rules/*")] = 
+
+    handlers_[getHandlerKey("DELETE", "/rules/*")] =
         injector.create<std::shared_ptr<DeleteRuleHandler>>();
-    
-    handlers_[getHandlerKey("GET", "/cache/invalidate/*")] = 
+
+        // FIXME: это работает не так как надо
+        // Сброс кэша должен быть в redirect-service
+    handlers_[getHandlerKey("GET", "/cache/invalidate/*")] =
         injector.create<std::shared_ptr<InvalidateCacheHandler>>();
-    
-    handlers_[getHandlerKey("GET", "/cache/invalidate")] = 
+
+    handlers_[getHandlerKey("GET", "/cache/invalidate")] =
         injector.create<std::shared_ptr<InvalidateCacheHandler>>();
-    
-    std::cout << "[RuleServiceApp] DI injector configured, registered " 
+
+    std::cout << "[RuleServiceApp] DI injector configured, registered "
               << handlers_.size() << " handlers" << std::endl;
 }
 
-void RuleServiceApp::handleRequest(IRequest& req, IResponse& res)
+void RuleServiceApp::handleRequest(IRequest &req, IResponse &res)
 {
     std::string path = req.getPath();
     std::string method = req.getMethod();
-    
-    std::cout << "[RuleServiceApp] " << method << " " << path 
+
+    std::cout << "[RuleServiceApp] " << method << " " << path
               << " from " << req.getClientIp() << std::endl;
-    
+
     auto handler = findHandler(method, path);
-    
+
     if (handler)
     {
         try
         {
             handler->handle(req, res);
         }
-        catch (const std::exception& e)
+        catch (const std::exception &e)
         {
             std::cerr << "[RuleServiceApp] Handler error: " << e.what() << std::endl;
             res.setStatus(500);
@@ -127,7 +105,7 @@ void RuleServiceApp::handleRequest(IRequest& req, IResponse& res)
     else
     {
         std::cout << "[RuleServiceApp] No handler found" << std::endl;
-        
+
         res.setStatus(404);
         res.setHeader("Content-Type", "application/json");
         res.setBody(R"({"error": "Not found"})");
@@ -135,8 +113,8 @@ void RuleServiceApp::handleRequest(IRequest& req, IResponse& res)
 }
 
 std::shared_ptr<IHttpHandler> RuleServiceApp::findHandler(
-    const std::string& method, 
-    const std::string& path)
+    const std::string &method,
+    const std::string &path)
 {
     std::string exactKey = getHandlerKey(method, path);
     auto it = handlers_.find(exactKey);
@@ -144,25 +122,26 @@ std::shared_ptr<IHttpHandler> RuleServiceApp::findHandler(
     {
         return it->second;
     }
-    
-    for (const auto& [key, handler] : handlers_)
+
+    for (const auto &[key, handler] : handlers_)
     {
         size_t methodDelimiter = key.find(':');
-        if (methodDelimiter == std::string::npos) continue;
-        
+        if (methodDelimiter == std::string::npos)
+            continue;
+
         std::string handlerMethod = key.substr(0, methodDelimiter);
         std::string handlerPattern = key.substr(methodDelimiter + 1);
-        
+
         if (handlerMethod == method && RouteMatcher::matches(handlerPattern, path))
         {
             return handler;
         }
     }
-    
+
     return nullptr;
 }
 
-std::string RuleServiceApp::getHandlerKey(const std::string& method, const std::string& pattern) const
+std::string RuleServiceApp::getHandlerKey(const std::string &method, const std::string &pattern) const
 {
     return method + ":" + pattern;
 }

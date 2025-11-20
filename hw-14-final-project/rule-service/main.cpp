@@ -34,11 +34,8 @@ int main(int argc, char* argv[])
         std::signal(SIGINT, signalHandler);
         std::signal(SIGTERM, signalHandler);
         
-        // Загружаем конфигурацию
-        app.loadEnvironment(argc, argv);
-        
-        // Запускаем сервер
-        app.start();
+        // Запускаем приложение
+        app.run(argc, argv);
         
         std::cout << "=== Rule Service Stopped ===" << std::endl;
         return 0;

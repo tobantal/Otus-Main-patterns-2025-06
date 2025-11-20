@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.14)
 # Создаем библиотеку с реализацией
 add_library(microservice-boost
     src/BoostBeastApplication.cpp
+    src/settings/DbSettings.cpp
 )
 
 # Подключаем заголовки

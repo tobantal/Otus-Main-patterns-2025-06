@@ -2,6 +2,7 @@
 
 #include "IEnvironment.hpp"
 #include <memory>
+#include <iostream>
 
 /**
  * @file IWebApplication.hpp
@@ -36,8 +37,9 @@ public:
      * @param argc Количество аргументов командной строки
      * @param argv Массив аргументов командной строки
      */
-    void run(int argc, char* argv[])
+    virtual void run(int argc, char* argv[])
     {
+        std::cout << "[IWebApplication] run() called" << std::endl;
         loadEnvironment(argc, argv);
         configureInjection();
         start();

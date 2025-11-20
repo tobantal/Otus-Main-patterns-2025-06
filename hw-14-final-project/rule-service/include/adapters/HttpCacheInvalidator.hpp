@@ -1,5 +1,8 @@
 #pragma once
+
 #include "ports/ICacheInvalidator.hpp"
+#include "../settings/ICacheInvalidatorSettings.hpp"
+#include <memory>
 #include <string>
 
 /**
@@ -19,7 +22,7 @@ public:
      * @brief Конструктор с URL redirect-service
      * @param redirectServiceUrl Базовый URL redirect-service (например, http://localhost:8080)
      */
-    explicit HttpCacheInvalidator(const std::string& redirectServiceUrl);
+    explicit HttpCacheInvalidator(std::shared_ptr<ICacheInvalidatorSettings> settings);
 
     bool invalidate(const std::string& shortId) override;
     bool invalidateAll() override;

@@ -1,8 +1,10 @@
 #pragma once
+
 #include "ports/IRuleRepository.hpp"
 #include "domain/Rule.hpp"
 #include "domain/RuleEntity.hpp"
 #include "domain/PaginatedRules.hpp"
+#include <settings/IDbSettings.hpp>
 #include <pqxx/pqxx>
 #include <memory>
 #include <string>
@@ -24,8 +26,8 @@ public:
      * @brief Конструктор с параметрами подключения
      * @param connectionString Строка подключения PostgreSQL
      */
-    explicit PostgreSQLRuleRepository(const std::string& connectionString);
-
+    explicit PostgreSQLRuleRepository(std::shared_ptr<IDbSettings> dbSettings);
+    
     /**
      * @brief Деструктор
      */

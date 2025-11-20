@@ -16,8 +16,8 @@ using tcp = asio::ip::tcp;
  * @author Anton Tobolkin
  */
 
-HttpCacheInvalidator::HttpCacheInvalidator(const std::string& redirectServiceUrl)
-    : redirectServiceUrl_(redirectServiceUrl)
+HttpCacheInvalidator::HttpCacheInvalidator(std::shared_ptr<ICacheInvalidatorSettings> settings)
+    : redirectServiceUrl_(settings->getRedirectServiceUrl())
 {
     std::cout << "[HttpCacheInvalidator] Created with redirect-service URL: " 
               << redirectServiceUrl_ << std::endl;
