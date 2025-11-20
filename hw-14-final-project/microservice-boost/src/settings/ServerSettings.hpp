@@ -2,9 +2,9 @@
 
 #include <memory>
 #include <string>
-#include "IServerSettings.hpp"
-#include "../IEnvironment.hpp"
-#include "../exceptions/EnvironmentLoadException.hpp"
+#include <stdexcept>
+#include "settings/IServerSettings.hpp"
+#include "IEnvironment.hpp"
 
 /**
  * @brief Реализация настроек сервера
@@ -19,13 +19,13 @@ public:
         try {
             host_ = env->get<std::string>("server.host");
         } catch (...) {
-            throw EnvironmentLoadException("Missing required setting: server.host");
+            throw std::runtime_error("Missing required setting: server.host");
         }
 
         try {
             port_ = env->get<int>("server.port");
         } catch (...) {
-            throw EnvironmentLoadException("Missing required setting: server.port");
+            throw std::runtime_error("Missing required setting: server.port");
         }
     }
 

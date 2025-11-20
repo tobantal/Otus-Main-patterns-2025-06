@@ -9,6 +9,7 @@
 #include <fstream>
 #include <thread>
 #include "RouteMatcher.hpp"
+#include "settings/ServerSettings.hpp"
 
 using json = nlohmann::json;
 
@@ -138,9 +139,10 @@ void BoostBeastApplication::start()
 {
     try
     {
-        // Получаем конфигурацию из окружения
-        std::string host = env_->get<std::string>("server.host");
-        int port = env_->get<int>("server.port");
+        // Создаем ServerSettings вручную (без DI) с валидацией
+        ServerSettings serverSettings(env_);
+        std::string host = serverSettings.getHost();
+        int port = serverSettings.getPort();
         
         std::cout << "[App] Starting HTTP server..." << std::endl;
         
@@ -210,7 +212,6 @@ void BoostBeastApplication::handleSession(tcp::socket socket)
         res.set(http::field::server, "BoostBeast");
         res.keep_alive(req.keep_alive());
 
-        // ЕДИНСТВЕННОЕ ИЗМЕНЕНИЕ: вызываем handleBeastRequest вместо прямого handleRequest
         handleBeastRequest(req, res, clientIp);
 
         // Отправляем ответ
