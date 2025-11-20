@@ -34,6 +34,8 @@ PaginatedRules RuleService::findAll(int page, int pageSize)
 bool RuleService::update(const std::string& shortId, const Rule& rule)
 {
     std::cout << "[RuleService] Updating rule: " << shortId << std::endl;
+    // FIXME: вот тут должен быть асинхронный вызов в redirect-service на сброс кэша
+    //HttpCacheInvalidator::invalidate(shortId)
     return repository_->update(shortId, rule);
 }
 

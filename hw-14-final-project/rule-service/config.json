@@ -4,13 +4,13 @@
     "port": 8081
   },
   "db": {
-    "host": "localhost",
+    "host": "postgres",
     "port": 5432,
     "name": "redirect_db",
     "user": "redirect_user",
     "password": "redirect_pass"
   },
   "redirect_service": {
-    "url": "http://localhost:8080"
+    "url": "http://redirect-service:8080"
   }
 }

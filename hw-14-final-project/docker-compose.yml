@@ -1,10 +1,66 @@
-# Docker Compose для Redirect Service
+# Docker Compose для микросервисов
 # Author: Anton Tobolkin
 # Расположение: hw-14-final-project/docker-compose.yml
 
 version: '3.8'
 
 services:
+  # PostgreSQL база данных для rule-service
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: redirect_user
+      POSTGRES_PASSWORD: redirect_pass
+      POSTGRES_DB: redirect_db
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persistent storage для БД
+      - postgres-data:/var/lib/postgresql/data
+      # Инициализационный скрипт
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U redirect_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Rule Service
+  rule-service:
+    build:
+      context: ..
+      dockerfile: hw-14-final-project/rule-service/Dockerfile
+    container_name: rule-service
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./rule-service/config.json:/app/config.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8081
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=redirect_db
+      - DB_USER=redirect_user
+      - DB_PASSWORD=redirect_pass
+      - REDIRECT_SERVICE_URL=http://redirect-service:8080
+    networks:
+      - microservices-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/rules"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redirect Service
   redirect-service:
     build:
       context: ..
@@ -13,15 +69,26 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # Опционально: монтируем конфиг из хоста (если нужно изменить без пересборки)
       - ./redirect-service/config.json:/app/config.json:ro
-    restart: unless-stopped
     environment:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8080
     networks:
       - microservices-network
+    depends_on:
+      rule-service:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   microservices-network:
     driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local

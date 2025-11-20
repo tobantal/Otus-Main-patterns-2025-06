@@ -46,11 +46,12 @@ void RuleServiceApp::configureInjection()
     auto injector = di::make_injector(
         di::bind<IEnvironment>().to(env_),
         di::bind<IDbSettings>().to<DbSettings>().in(di::singleton),
+        di::bind<IRuleRepository>().to<PostgreSQLRuleRepository>().in(di::singleton),
+        //di::bind<IRuleRepository>().to<InMemoryRuleRepository>().in(di::singleton),
         di::bind<ICacheInvalidatorSettings>().to<CacheInvalidatorSettings>().in(di::singleton),
-        //di::bind<IRuleRepository>().to<PostgreSQLRuleRepository>().in(di::singleton),
-        di::bind<IRuleRepository>().to<InMemoryRuleRepository>().in(di::singleton),
         di::bind<ICacheInvalidator>().to<HttpCacheInvalidator>().in(di::singleton),
-        di::bind<IRuleService>().to<RuleService>().in(di::singleton));
+        di::bind<IRuleService>().to<RuleService>().in(di::singleton)
+    );
 
     // Регистрируем хендлеры через injector
     handlers_[getHandlerKey("POST", "/rules")] =

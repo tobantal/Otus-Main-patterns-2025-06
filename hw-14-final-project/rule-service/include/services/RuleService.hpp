@@ -22,6 +22,7 @@ public:
     /**
      * @brief Конструктор с инъекцией зависимостей
      */
+    // FIXME: добавить ICacheInvalidator
     explicit RuleService(std::shared_ptr<IRuleRepository> repository);
 
     /**
@@ -52,6 +53,7 @@ public:
      * @param rule Новые данные
      * @return true если успешно обновлено
      */
+    // FIXME: при вызове методов update и deleteById вызывать ICacheInvalidator, чтоб он делал delete запрос в redeirect-service
     bool update(const std::string &shortId, const Rule &rule);
 
     /**
@@ -59,6 +61,7 @@ public:
      * @param shortId Короткий идентификатор
      * @return true если успешно удалено
      */
+    // FIXME: вызывать ICacheInvalidator, чтоб он делал delete запрос в redeirect-service
     bool deleteById(const std::string &shortId);
 
 private:

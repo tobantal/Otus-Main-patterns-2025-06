@@ -30,11 +30,20 @@ bool HttpCacheInvalidator::invalidate(const std::string& shortId)
     return sendGetRequest(path);
 }
 
+// FIXME: убрать этот метод
 bool HttpCacheInvalidator::invalidateAll()
 {
     std::cout << "[HttpCacheInvalidator] Invalidating all cache" << std::endl;
     return sendGetRequest("/cache/invalidate");
 }
+
+// FIXME: херовая реализация.
+
+// 1. Тут раскрывается реализация Boost.Beast, а надо это скрыть.
+// 2. Должен быть Delete запрос, или какой-то общий rest-client (создать отдельный сервис в BoostBeast модуле).
+
+// sendRequest(метод, путь, тело, параметры, хэдеры)
+// можно ли использовать IRequest, а получать IResponse?
 
 bool HttpCacheInvalidator::sendGetRequest(const std::string& path) const
 {

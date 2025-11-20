@@ -41,8 +41,8 @@ FetchContent_Declare(
     Boost
     URL https://github.com/boostorg/boost/releases/download/boost-1.83.0/boost-1.83.0.tar.gz
     URL_HASH SHA256=0c6049764e80aa32754acd7d4f179fd5551d8172a83b71532ae093e7384e98da
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
+
 
 # Настройки Boost - собираем только system
 set(BOOST_INCLUDE_LIBRARIES system beast asio)
