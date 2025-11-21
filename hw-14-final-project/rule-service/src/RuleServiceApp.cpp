@@ -71,8 +71,6 @@ void RuleServiceApp::configureInjection()
     handlers_[getHandlerKey("DELETE", "/rules/*")] =
         injector.create<std::shared_ptr<DeleteRuleHandler>>();
 
-        // FIXME: это работает не так как надо
-        // Сброс кэша должен быть в redirect-service
     handlers_[getHandlerKey("GET", "/cache/invalidate/*")] =
         injector.create<std::shared_ptr<InvalidateCacheHandler>>();
 

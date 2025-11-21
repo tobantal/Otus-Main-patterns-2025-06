@@ -99,7 +99,7 @@ add_subdirectory(redirect-service/tests)
 
 message(STATUS "Adding rule-service...")
 add_subdirectory(rule-service)
-#add_subdirectory(redirect-service/tests)
+add_subdirectory(rule-service/tests)
 
 message(STATUS "")
 message(STATUS "========================================")
