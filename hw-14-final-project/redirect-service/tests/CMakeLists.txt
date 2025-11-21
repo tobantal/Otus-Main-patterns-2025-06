@@ -28,6 +28,9 @@ add_executable(redirect-service-test
     RedirectServiceTest.cpp
     RulesCacheTest.cpp
     RedirectHandlerTest.cpp
+    ASTNodeTest.cpp
+    RuleServiceSettingsTest.cpp
+    HttpRuleClientTest.cpp
 )
 
 target_link_libraries(redirect-service-test

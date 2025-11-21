@@ -223,3 +223,27 @@ TEST(DSLEvaluatorTest, EmptyCondition)
     
     EXPECT_FALSE(evaluator.evaluate("", req));
 }
+
+// Тест: неизвестная переменная возвращает false
+TEST(DSLEvaluatorTest, UnknownVariable) {
+    DSLEvaluator evaluator;
+
+    RedirectRequest req{"test", "0.0.0.0", {{"User-Agent", "Chrome/120.0"}}};
+
+    // Переменной "os" нет в getVariableValue -> false
+    EXPECT_FALSE(evaluator.evaluate("os == \"windows\"", req));
+
+    // Любое сравнение с неизвестной переменной
+    EXPECT_FALSE(evaluator.evaluate("unknownVar != \"something\"", req));
+}
+
+// Тест: некорректный синтаксис должен вернуть false
+TEST(DSLEvaluatorTest, MalformedExpressionReturnsFalse) {
+    DSLEvaluator evaluator;
+
+    RedirectRequest req{"test", "0.0.0.0", {{"User-Agent", "Chrome/120.0"}}};
+
+    EXPECT_FALSE(evaluator.evaluate("browser === \"chrome\"", req)); // тройное ==
+    EXPECT_FALSE(evaluator.evaluate("AND browser == \"chrome\"", req)); // начинается с AND
+    EXPECT_FALSE(evaluator.evaluate("browser == \"chrome\" OR", req)); // заканчивается OR
+}
