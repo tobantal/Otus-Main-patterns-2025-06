@@ -3,9 +3,8 @@
 #include <string>
 #include <memory>
 #include <optional>
+#include "domain/Rule.hpp"
 
-// Forward declaration
-class Rule;
 
 /**
  * @brief Интерфейс кэша правил

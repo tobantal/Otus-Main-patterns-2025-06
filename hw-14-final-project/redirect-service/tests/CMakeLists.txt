@@ -31,6 +31,8 @@ add_executable(redirect-service-test
     ASTNodeTest.cpp
     RuleServiceSettingsTest.cpp
     HttpRuleClientTest.cpp
+    InvalidateCacheByKeyHandlerTest.cpp
+    InvalidateCacheHandlerTest.cpp
 )
 
 target_link_libraries(redirect-service-test
