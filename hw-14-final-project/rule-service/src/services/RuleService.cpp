@@ -13,13 +13,13 @@ RuleService::RuleService(std::shared_ptr<IRuleRepository> repository)
     std::cout << "[RuleService] Service created" << std::endl;
 }
 
-bool RuleService::create(const Rule& rule)
+bool RuleService::create(const Rule &rule)
 {
     std::cout << "[RuleService] Creating rule: " << rule.shortId << std::endl;
     return repository_->create(rule);
 }
 
-std::optional<Rule> RuleService::findById(const std::string& shortId)
+std::optional<Rule> RuleService::findById(const std::string &shortId)
 {
     std::cout << "[RuleService] Finding rule: " << shortId << std::endl;
     return repository_->findById(shortId);
@@ -31,15 +31,13 @@ PaginatedRules RuleService::findAll(int page, int pageSize)
     return repository_->findAll(page, pageSize);
 }
 
-bool RuleService::update(const std::string& shortId, const Rule& rule)
+bool RuleService::update(const std::string &shortId, const Rule &rule)
 {
     std::cout << "[RuleService] Updating rule: " << shortId << std::endl;
-    // FIXME: вот тут должен быть асинхронный вызов в redirect-service на сброс кэша
-    //HttpCacheInvalidator::invalidate(shortId)
     return repository_->update(shortId, rule);
 }
 
-bool RuleService::deleteById(const std::string& shortId)
+bool RuleService::deleteById(const std::string &shortId)
 {
     std::cout << "[RuleService] Deleting rule: " << shortId << std::endl;
     return repository_->deleteById(shortId);
