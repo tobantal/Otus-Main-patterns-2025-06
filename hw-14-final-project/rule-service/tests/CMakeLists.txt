@@ -27,6 +27,7 @@ add_executable(rule-service-test
     CacheInvalidatorSettingsTest.cpp
     HttpCacheInvalidatorTest.cpp
     RuleServiceTest.cpp
+    InMemoryRuleRepositoryTest.cpp
 )
 
 target_link_libraries(rule-service-test

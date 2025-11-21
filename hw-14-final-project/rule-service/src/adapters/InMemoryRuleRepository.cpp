@@ -12,49 +12,46 @@ InMemoryRuleRepository::InMemoryRuleRepository()
 {
     std::cout << "[InMemoryRuleRepository] Created" << std::endl;
     
-    // Добавляем тестовые правила для демонстрации (10 правил с различными условиями)
-    
-    // 1. Простое условие (1 предикат)
     Rule rule1{"promo", "https://example.com/promo", "country == \"RU\""};
     create(rule1);
-    
-    // 2. AND с 2 предикатами
+
     Rule rule2{"docs", "https://docs.example.com", "browser == \"chrome\" AND country == \"US\""};
     create(rule2);
-    
-    // 3. OR с 2 предикатами
+
     Rule rule3{"blog", "https://blog.example.com", "device == \"mobile\" OR device == \"tablet\""};
     create(rule3);
-    
-    // 4. AND с 3 предикатами
-    Rule rule4{"sale", "https://sale.example.com", "country == \"RU\" AND browser == \"firefox\" AND device == \"desktop\""};
+
+    Rule rule4{"safari_ru", "https://ru.example.com/safari", "browser == \"safari\" AND country == \"RU\""};
     create(rule4);
-    
-    // 5. OR с 3 предикатами
-    Rule rule5{"news", "https://news.example.com", "language == \"ru\" OR language == \"en\" OR language == \"de\""};
+
+    Rule rule5{"night_22", "https://example.com/night22", "date == \"2025-11-22\""};
     create(rule5);
-    
-    // 6. Комбинация AND и OR (2 предиката)
-    Rule rule6{"shop", "https://shop.example.com", "country == \"US\" AND (device == \"mobile\" OR device == \"tablet\")"};
+
+    Rule rule6{"ip_internal", "https://intranet.example.com", "ip == \"10.0.0.1\""};
     create(rule6);
-    
-    // 7. Простое условие с датой
-    Rule rule7{"archive", "https://archive.example.com", "date < \"2025-01-01\""};
+
+    Rule rule7{"holiday_fixed", "https://holiday.example.com", "date == \"2025-12-31\""};
     create(rule7);
-    
-    // 8. AND с датой и страной (2 предиката)
-    Rule rule8{"special", "https://special.example.com", "country == \"DE\" AND date >= \"2025-11-01\""};
+
+    Rule rule8{"edge_de", "https://de.example.com/edge", "browser == \"edge\" AND country == \"DE\""};
     create(rule8);
-    
-    // 9. OR с браузерами (3 предиката)
-    Rule rule9{"beta", "https://beta.example.com", "browser == \"chrome\" OR browser == \"firefox\" OR browser == \"safari\""};
+
+    Rule rule9{"mobile_us", "https://us.example.com/mobile", "device == \"mobile\" AND country == \"US\""};
     create(rule9);
-    
-    // 10. Комплексное условие (3 предиката с AND/OR)
-    Rule rule10{"premium", "https://premium.example.com", "country == \"RU\" AND (browser == \"chrome\" OR browser == \"edge\") AND device == \"desktop\""};
+
+    Rule rule10{"china", "https://cn.example.com", "country == \"CN\""};
     create(rule10);
-    
-    std::cout << "[InMemoryRuleRepository] Initialized with " << totalCount_ << " test rules (with complex conditions)" << std::endl;
+
+    Rule rule11{"chrome_fr_or_tablet", "https://fr.example.com/alt", "browser == \"chrome\" AND country == \"FR\" OR device == \"tablet\""};
+    create(rule11);
+
+    Rule rule12{"unknown_ua", "https://fallback.example.com", "browser == \"unknown\""};
+    create(rule12);
+
+    Rule rule13{"premium_app", "https://premium.example.com", "header.User-Agent == \"PremiumApp\""};
+    create(rule13);
+
+    std::cout << "[InMemoryRuleRepository] Initialized with " << totalCount_ << " test rules" << std::endl;
 }
 
 InMemoryRuleRepository::~InMemoryRuleRepository()

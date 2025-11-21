@@ -88,39 +88,91 @@ bool DSLEvaluator::evaluateAST(const std::shared_ptr<ASTNode> &ast, const Redire
     return false;
 }
 
-std::string DSLEvaluator::getVariableValue(const std::string &varName, const RedirectRequest &req)
+std::string DSLEvaluator::getVariableValue(
+    const std::string &varName,
+    const RedirectRequest &req)
 {
+    //
+    // --- browser ---
+    //
     if (varName == "browser")
     {
         auto it = req.headers.find("User-Agent");
-        std::string userAgent = (it != req.headers.end()) ? it->second : "";
-        std::transform(userAgent.begin(), userAgent.end(), userAgent.begin(), ::tolower);
+        std::string ua = (it != req.headers.end()) ? it->second : "";
+        std::string uaLower = ua;
+        std::transform(uaLower.begin(), uaLower.end(), uaLower.begin(), ::tolower);
 
-        if (userAgent.find("chrome") != std::string::npos && userAgent.find("edg") == std::string::npos)
-            return "chrome";
-        else if (userAgent.find("firefox") != std::string::npos)
-            return "firefox";
-        else if (userAgent.find("safari") != std::string::npos && userAgent.find("chrome") == std::string::npos)
-            return "safari";
-        else if (userAgent.find("edg") != std::string::npos)
+        // порядок важен!
+
+        // Microsoft Edge (Chromium)
+        if (uaLower.find("edg") != std::string::npos)
             return "edge";
-        else
-            return "unknown";
+
+        // Firefox
+        if (uaLower.find("firefox") != std::string::npos)
+            return "firefox";
+
+        // Chrome (но не Edge)
+        if (uaLower.find("chrome") != std::string::npos &&
+            uaLower.find("edg") == std::string::npos)
+        {
+            return "chrome";
+        }
+
+        // Safari (но не Chrome)
+        if (uaLower.find("safari") != std::string::npos &&
+            uaLower.find("chrome") == std::string::npos)
+        {
+            return "safari";
+        }
+
+        return "unknown";
     }
 
+    //
+    // --- ip ---
+    //
+    if (varName == "ip")
+    {
+        return req.ip;
+    }
+
+    //
+    // --- date ---
+    //
     if (varName == "date")
     {
         auto now = std::chrono::system_clock::now();
-        auto time_t = std::chrono::system_clock::to_time_t(now);
-        std::tm tm = *std::localtime(&time_t);
+        auto t = std::chrono::system_clock::to_time_t(now);
+        std::tm tm = *std::localtime(&t);
         std::ostringstream oss;
         oss << std::put_time(&tm, "%Y-%m-%d");
         return oss.str();
     }
 
+    //
+    // --- country (заглушка) ---
+    //
     if (varName == "country")
+    {
         return "RU";
+    }
 
+    //
+    // --- header.<NAME> (универсальный механизм) ---
+    //
+    if (varName.rfind("header.", 0) == 0)
+    {
+        const std::string headerName = varName.substr(7);
+        auto it = req.headers.find(headerName);
+        if (it != req.headers.end())
+            return it->second;
+        return "";
+    }
+
+    //
+    // --- неизвестная переменная ---
+    //
     std::cerr << "[DSLEvaluator] Unknown variable: " << varName << std::endl;
     return "";
 }
