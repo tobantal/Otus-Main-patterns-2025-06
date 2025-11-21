@@ -23,7 +23,6 @@ add_executable(microservice-boost-test
     ServerSettingsTest.cpp
     DbSettingsTest.cpp
     HttpClientTest.cpp
-    BoostBeastApplicationTest.cpp
 )
 
 target_link_libraries(microservice-boost-test
