@@ -20,6 +20,10 @@ FetchContent_MakeAvailable(googletest)
 add_executable(rule-service-test
     CreateRuleHandlerTest.cpp
     DeleteRuleHandlerTest.cpp
+    UpdateRuleHandlerTest.cpp
+    GetRuleHandlerTest.cpp
+    ListRulesHandlerTest.cpp
+    InvalidateCacheHandlerTest.cpp
 )
 
 target_link_libraries(rule-service-test
