@@ -3,7 +3,6 @@
 #include "IResponse.hpp"
 #include <string>
 #include <map>
-#include "settings/IRuleServiceSettings.hpp"
 
 /**
  * @file SimpleResponse.hpp

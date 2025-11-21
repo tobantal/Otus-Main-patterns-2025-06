@@ -19,6 +19,7 @@
 #include <adapters/InMemoryRuleRepository.hpp>
 #include "ports/IRuleRepository.hpp"
 #include "ports/ICacheInvalidator.hpp"
+#include <HttpClient.hpp>
 
 namespace di = boost::di;
 
@@ -48,6 +49,7 @@ void RuleServiceApp::configureInjection()
         di::bind<IDbSettings>().to<DbSettings>().in(di::singleton),
         di::bind<IRuleRepository>().to<PostgreSQLRuleRepository>().in(di::singleton),
         //di::bind<IRuleRepository>().to<InMemoryRuleRepository>().in(di::singleton),
+        di::bind<IHttpClient>().to<HttpClient>().in(di::singleton),
         di::bind<ICacheInvalidatorSettings>().to<CacheInvalidatorSettings>().in(di::singleton),
         di::bind<ICacheInvalidator>().to<HttpCacheInvalidator>().in(di::singleton),
         di::bind<IRuleService>().to<RuleService>().in(di::singleton)
