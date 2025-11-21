@@ -5,9 +5,8 @@
 #include <memory>
 #include <optional>
 #include <iostream>
+#include "domain/Rule.hpp"
 
-// Forward declaration
-class Rule;
 
 /**
  * @brief Реализация потокобезопасного кэша правил

@@ -26,6 +26,8 @@ add_executable(redirect-service-test
     RuleParserTest.cpp
     DSLEvaluatorTest.cpp
     RedirectServiceTest.cpp
+    RulesCacheTest.cpp
+    RedirectHandlerTest.cpp
 )
 
 target_link_libraries(redirect-service-test
