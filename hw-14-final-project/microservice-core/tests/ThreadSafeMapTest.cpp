@@ -1,12 +1,13 @@
 #include <gtest/gtest.h>
 #include "ThreadSafeMap.hpp"
+#include <algorithm>
 
 /**
  * @file ThreadSafeMapTest.cpp
  * @brief Unit-тесты для ThreadSafeMap
  */
 
-// Базовый тест: insert + find
+// insert + find
 TEST(ThreadSafeMapTest, InsertAndFind)
 {
     ThreadSafeMap<int, std::string> map;
@@ -47,6 +48,20 @@ TEST(ThreadSafeMapTest, RemoveKey)
     EXPECT_EQ(map.find(5), nullptr);
 }
 
+// clear очищает карту
+TEST(ThreadSafeMapTest, ClearMap)
+{
+    ThreadSafeMap<int, std::string> map;
+    map.insert(1, std::make_shared<std::string>("a"));
+    map.insert(2, std::make_shared<std::string>("b"));
+
+    map.clear();
+
+    EXPECT_FALSE(map.contains(1));
+    EXPECT_FALSE(map.contains(2));
+    EXPECT_TRUE(map.getAll().empty());
+}
+
 // getAll возвращает все значения
 TEST(ThreadSafeMapTest, GetAllValues)
 {
@@ -56,10 +71,8 @@ TEST(ThreadSafeMapTest, GetAllValues)
     map.insert(3, std::make_shared<std::string>("c"));
 
     auto items = map.getAll();
-
     ASSERT_EQ(items.size(), 3u);
 
-    // Проверяем, что найденные элементы — те же самые shared_ptr
     std::vector<std::string> vals;
     for (auto &p : items) vals.push_back(*p);
 
