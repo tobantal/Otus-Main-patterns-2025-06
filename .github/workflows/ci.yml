@@ -2,28 +2,42 @@
 
 on:
   push:
-    branches: [ master, develop, hw-11-state ]
+    branches: [ master, develop, smart-redirect-service ]
   pull_request:
     branches: [ master ]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
+    
     steps:
-    - name: 🔄 Checkout repository
+    - name: 🔄 Checkout
       uses: actions/checkout@v3
-
+      
     - name: 🛠 Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y cmake g++ make
-
-    - name: 🏗 Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
-
+      run: sudo apt-get update && sudo apt-get install -y cmake g++ gcovr
+      
+    - name: 🏗 Configure with coverage
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage -g -O0"
+      
     - name: ⚙️ Build
-      run: cmake --build build --config Release
-
-    - name: ✅ Run tests (verbose)
+      run: cmake --build build
+      
+    - name: ✅ Run tests
+      run: ctest --test-dir build --output-on-failure --verbose
+    
+    - name: 📊 Generate HTML coverage report
       run: |
-        cd ${{ github.workspace }}
-        ctest --test-dir build --output-on-failure --timeout 60 --verbose
+        gcovr --root . \
+              --filter 'hw-14-final-project/.*' \
+              --exclude '.*/tests/.*' \
+              --gcov-ignore-parse-errors=negative_hits.warn_once_per_file \
+              --html-details coverage.html \
+              --print-summary
+    
+    - name: 📤 Upload coverage report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report-html
+        path: coverage*.html
