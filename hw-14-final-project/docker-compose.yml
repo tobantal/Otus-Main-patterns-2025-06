@@ -1,0 +1,78 @@
+# Docker Compose для микросервисов
+# Author: Anton Tobolkin
+# Расположение: hw-14-final-project/docker-compose.yml
+
+services:
+  # PostgreSQL база данных для rule-service
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: redirect_user
+      POSTGRES_PASSWORD: redirect_pass
+      POSTGRES_DB: redirect_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U redirect_user -d redirect_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Rule Service
+  rule-service:
+    build:
+      context: ..
+      dockerfile: hw-14-final-project/rule-service/Dockerfile
+    container_name: rule-service
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./rule-service/config.json:/app/config.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://rule-service:8081/rules"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redirect Service
+  redirect-service:
+    build:
+      context: ..
+      dockerfile: hw-14-final-project/redirect-service/Dockerfile
+    container_name: redirect-service
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./redirect-service/config.json:/app/config.json:ro
+    networks:
+      - microservices-network
+    depends_on:
+      rule-service:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://redirect-service:8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  microservices-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
