@@ -25,7 +25,7 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 # сборка общей библиотеки для всех проектов (включает ICommand.hpp)
-#add_subdirectory(common)
+add_subdirectory(common)
 
 # сборка библиотеки Http-сервера на основе cpp-httplib
 #add_subdirectory(httplib-wrapper)
@@ -35,7 +35,7 @@ enable_testing()
 #add_subdirectory ("hw-02-abstractions")
 #add_subdirectory("hw-03-solid-and-exceptions")
 
-#add_subdirectory ("hw-04-macro-commands")
+add_subdirectory ("hw-04-macro-commands")
 
 # Подключаем hw-05-ioc: собираем её как библиотеку
 #add_subdirectory(hw-05-ioc)
@@ -56,6 +56,7 @@ enable_testing()
 # Сборка проекта со сменой состояний
 #add_subdirectory(hw-11-state)
 
+add_subdirectory(hw-12-collision)
 
 # Сборка финального проекта
-add_subdirectory(hw-14-final-project)
+#add_subdirectory(hw-14-final-project)
