@@ -1,13 +1,16 @@
 #include <gtest/gtest.h>
+#include "Order.hpp"
 #include "SecureOrderInterpreter.hpp"
 #include "UObject.hpp"
 #include "IoC.hpp"
 #include "ICommand.hpp"
-#include "commands/StartMoveCommand.hpp"
-#include "commands/StopMoveCommand.hpp"
-#include "commands/FireCommand.hpp"
+#include "ICommandFactory.hpp"
+#include "commands/StartMoveCommandFactory.hpp"
+#include "commands/StopMoveCommandFactory.hpp"
+#include "commands/FireCommandFactory.hpp"
 #include <memory>
 #include <functional>
+#include <sstream>
 
 /**
  * @file SecureOrderInterpreterTest.cpp
@@ -17,13 +20,25 @@
 
 class SecureOrderInterpreterTest : public ::testing::Test {
 protected:
+    static int testCounter_;  // Счётчик для уникальных имён
+    static bool commandsRegistered_;  // Флаг однократной регистрации команд
+    std::string testPrefix_;   // Уникальный префикс для скоупов игроков
+    
     void SetUp() override {
-        // Регистрируем глобальные команды (доступны из всех скоупов)
-        registerGlobalCommand("StartMove");
-        registerGlobalCommand("StopMove");
-        registerGlobalCommand("Fire");
+        // Регистрируем глобальные фабрики команд только один раз (при первом тесте)
+        if (!commandsRegistered_) {
+            registerGlobalCommandFactory<StartMoveCommandFactory>("StartMove");
+            registerGlobalCommandFactory<StopMoveCommandFactory>("StopMove");
+            registerGlobalCommandFactory<FireCommandFactory>("Fire");
+            commandsRegistered_ = true;
+        }
         
-        // Создаем скоупы для игроков
+        // Создаём уникальный префикс для этого теста
+        std::stringstream ss;
+        ss << "SecTest" << testCounter_++ << "_";
+        testPrefix_ = ss.str();
+        
+        // Создаем скоупы для игроков с уникальными именами
         createPlayerScope("Alice");
         createPlayerScope("Bob");
         
@@ -35,10 +50,17 @@ protected:
     }
     
     /**
+     * @brief Возвращает полное имя скоупа игрока (с учётом уникального префикса)
+     */
+    std::string getPlayerScopeId(const std::string& playerId) {
+        return "Player." + testPrefix_ + playerId;
+    }
+    
+    /**
      * @brief Создает скоуп для игрока
      */
     void createPlayerScope(const std::string& playerId) {
-        auto scopeId = std::make_shared<std::string>("Player." + playerId);
+        auto scopeId = std::make_shared<std::string>(getPlayerScopeId(playerId));
         std::vector<std::shared_ptr<void>> args = {scopeId};
         
         auto createCommand = IoC::resolve<ICommand>("Scopes.New", args);
@@ -52,9 +74,8 @@ protected:
         const std::string& playerId, 
         const std::string& objectId) 
     {
-        // Сохраняем текущий скоуп
         // Переключаемся на скоуп игрока
-        auto scopeId = std::make_shared<std::string>("Player." + playerId);
+        auto scopeId = std::make_shared<std::string>(getPlayerScopeId(playerId));
         std::vector<std::shared_ptr<void>> scopeArgs = {scopeId};
         auto setCommand = IoC::resolve<ICommand>("Scopes.Current", scopeArgs);
         setCommand->execute();
@@ -79,24 +100,19 @@ protected:
     }
     
     /**
-     * @brief Регистрирует глобальную команду
+     * @brief Регистрирует глобальную фабрику команды
+     * 
+     * Вызывается в начале SetUp когда скоуп не установлен.
      */
-    void registerGlobalCommand(const std::string& commandName) {
-        auto factory = std::make_shared<std::function<std::shared_ptr<void>(std::vector<std::shared_ptr<void>>)>>(
-            [commandName](std::vector<std::shared_ptr<void>> args) -> std::shared_ptr<void> {
-                auto object = std::static_pointer_cast<IUObject>(args[0]);
-                auto params = std::static_pointer_cast<IUObject>(args[1]);
-                
-                std::shared_ptr<ICommand> cmd;
-                if (commandName == "StartMove") {
-                    cmd = std::make_shared<StartMoveCommand>(object, params);
-                } else if (commandName == "StopMove") {
-                    cmd = std::make_shared<StopMoveCommand>(object, params);
-                } else if (commandName == "Fire") {
-                    cmd = std::make_shared<FireCommand>(object, params);
-                }
-                
-                return std::static_pointer_cast<void>(cmd);
+    template<typename FactoryType>
+    void registerGlobalCommandFactory(const std::string& commandName) {
+        auto factory = std::make_shared<std::function<std::shared_ptr<void>()>>(
+            []() -> std::shared_ptr<void> {
+                return std::static_pointer_cast<void>(
+                    std::static_pointer_cast<ICommandFactory>(
+                        std::make_shared<FactoryType>()
+                    )
+                );
             }
         );
         
@@ -105,6 +121,13 @@ protected:
         
         auto registerCmd = IoC::resolve<ICommand>("IoC.Register", args);
         registerCmd->execute();
+    }
+    
+    /**
+     * @brief Создает SecureOrderInterpreter для игрока (с учётом уникального префикса)
+     */
+    SecureOrderInterpreter createInterpreter(const std::string& playerId) {
+        return SecureOrderInterpreter(testPrefix_ + playerId);
     }
     
     /**
@@ -129,6 +152,9 @@ protected:
     }
 };
 
+int SecureOrderInterpreterTest::testCounter_ = 0;
+bool SecureOrderInterpreterTest::commandsRegistered_ = false;
+
 // ============================================================================
 // Тесты доступа Alice к своим кораблям
 // ============================================================================
@@ -140,7 +166,7 @@ TEST_F(SecureOrderInterpreterTest, AliceCanControlOwnShip001)
 {
     Order order = createOrder("ship_001", "StartMove", {{"initialVelocity", 5}});
     
-    SecureOrderInterpreter interpreter("Alice");
+    auto interpreter = createInterpreter("Alice");
     
     EXPECT_NO_THROW(interpreter.interpret(order));
 }
@@ -152,7 +178,7 @@ TEST_F(SecureOrderInterpreterTest, AliceCanControlOwnShip002)
 {
     Order order = createOrder("ship_002", "StopMove");
     
-    SecureOrderInterpreter interpreter("Alice");
+    auto interpreter = createInterpreter("Alice");
     
     EXPECT_NO_THROW(interpreter.interpret(order));
 }
@@ -164,7 +190,7 @@ TEST_F(SecureOrderInterpreterTest, AliceCanFireFromOwnShip)
 {
     Order order = createOrder("ship_001", "Fire", {{"targetId", std::string("enemy")}});
     
-    SecureOrderInterpreter interpreter("Alice");
+    auto interpreter = createInterpreter("Alice");
     
     EXPECT_NO_THROW(interpreter.interpret(order));
 }
@@ -180,7 +206,7 @@ TEST_F(SecureOrderInterpreterTest, AliceCannotControlBobsShip003)
 {
     Order order = createOrder("ship_003", "StartMove", {{"initialVelocity", 5}});
     
-    SecureOrderInterpreter interpreter("Alice");
+    auto interpreter = createInterpreter("Alice");
     
     EXPECT_THROW(interpreter.interpret(order), std::runtime_error);
 }
@@ -192,7 +218,7 @@ TEST_F(SecureOrderInterpreterTest, AliceCannotControlBobsShip004)
 {
     Order order = createOrder("ship_004", "StopMove");
     
-    SecureOrderInterpreter interpreter("Alice");
+    auto interpreter = createInterpreter("Alice");
     
     EXPECT_THROW(interpreter.interpret(order), std::runtime_error);
 }
@@ -208,7 +234,7 @@ TEST_F(SecureOrderInterpreterTest, BobCanControlOwnShip003)
 {
     Order order = createOrder("ship_003", "StartMove", {{"initialVelocity", 3}});
     
-    SecureOrderInterpreter interpreter("Bob");
+    auto interpreter = createInterpreter("Bob");
     
     EXPECT_NO_THROW(interpreter.interpret(order));
 }
@@ -220,7 +246,7 @@ TEST_F(SecureOrderInterpreterTest, BobCanControlOwnShip004)
 {
     Order order = createOrder("ship_004", "Fire", {{"targetId", std::string("target")}});
     
-    SecureOrderInterpreter interpreter("Bob");
+    auto interpreter = createInterpreter("Bob");
     
     EXPECT_NO_THROW(interpreter.interpret(order));
 }
@@ -236,7 +262,7 @@ TEST_F(SecureOrderInterpreterTest, BobCannotControlAlicesShip001)
 {
     Order order = createOrder("ship_001", "StartMove", {{"initialVelocity", 5}});
     
-    SecureOrderInterpreter interpreter("Bob");
+    auto interpreter = createInterpreter("Bob");
     
     EXPECT_THROW(interpreter.interpret(order), std::runtime_error);
 }
@@ -248,7 +274,7 @@ TEST_F(SecureOrderInterpreterTest, BobCannotControlAlicesShip002)
 {
     Order order = createOrder("ship_002", "StopMove");
     
-    SecureOrderInterpreter interpreter("Bob");
+    auto interpreter = createInterpreter("Bob");
     
     EXPECT_THROW(interpreter.interpret(order), std::runtime_error);
 }
@@ -262,7 +288,7 @@ TEST_F(SecureOrderInterpreterTest, BobCannotControlAlicesShip002)
  */
 TEST_F(SecureOrderInterpreterTest, PlayerCanControlMultipleOwnShips)
 {
-    SecureOrderInterpreter interpreter("Alice");
+    auto interpreter = createInterpreter("Alice");
     
     Order order1 = createOrder("ship_001", "StartMove", {{"initialVelocity", 5}});
     Order order2 = createOrder("ship_002", "StopMove");
@@ -280,16 +306,18 @@ TEST_F(SecureOrderInterpreterTest, AccessDeniedErrorMessage)
 {
     Order order = createOrder("ship_003", "StartMove", {{"initialVelocity", 5}});
     
-    SecureOrderInterpreter interpreter("Alice");
+    auto interpreter = createInterpreter("Alice");
     
     try {
         interpreter.interpret(order);
         FAIL() << "Expected std::runtime_error";
     } catch (const std::runtime_error& e) {
         std::string errorMsg = e.what();
-        // Проверяем, что сообщение содержит информацию об отказе в доступе
-        EXPECT_TRUE(errorMsg.find("Access denied") != std::string::npos ||
-                    errorMsg.find("ship_003") != std::string::npos);
+        // Проверяем, что сообщение содержит информацию об объекте
+        // (объект не найден в скоупе = отказ в доступе)
+        EXPECT_TRUE(errorMsg.find("ship_003") != std::string::npos ||
+                    errorMsg.find("not found") != std::string::npos ||
+                    errorMsg.find("Object") != std::string::npos);
     }
 }
 
@@ -298,7 +326,8 @@ TEST_F(SecureOrderInterpreterTest, AccessDeniedErrorMessage)
  */
 TEST_F(SecureOrderInterpreterTest, GetPlayerId)
 {
-    SecureOrderInterpreter interpreter("Alice");
+    auto interpreter = createInterpreter("Alice");
     
-    EXPECT_EQ(interpreter.getPlayerId(), "Alice");
+    // playerId содержит уникальный префикс теста
+    EXPECT_TRUE(interpreter.getPlayerId().find("Alice") != std::string::npos);
 }

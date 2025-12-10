@@ -1,12 +1,14 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include "Order.hpp"
 #include "OrderInterpreter.hpp"
 #include "UObject.hpp"
 #include "IoC.hpp"
 #include "ICommand.hpp"
-#include "commands/StartMoveCommand.hpp"
-#include "commands/StopMoveCommand.hpp"
-#include "commands/FireCommand.hpp"
+#include "ICommandFactory.hpp"
+#include "commands/StartMoveCommandFactory.hpp"
+#include "commands/StopMoveCommandFactory.hpp"
+#include "commands/FireCommandFactory.hpp"
 #include <memory>
 #include <functional>
 
@@ -18,14 +20,19 @@
 
 class OrderInterpreterTest : public ::testing::Test {
 protected:
+    static bool commandsRegistered_;  // Флаг однократной регистрации команд
+    
     void SetUp() override {
-        // Регистрируем тестовый объект
-        registerTestObject("ship_001");
+        // Регистрируем фабрики команд только один раз
+        if (!commandsRegistered_) {
+            registerCommandFactory<StartMoveCommandFactory>("StartMove");
+            registerCommandFactory<StopMoveCommandFactory>("StopMove");
+            registerCommandFactory<FireCommandFactory>("Fire");
+            commandsRegistered_ = true;
+        }
         
-        // Регистрируем команды
-        registerCommand("StartMove");
-        registerCommand("StopMove");
-        registerCommand("Fire");
+        // Регистрируем тестовый объект
+        registerTestObject("basic_ship");
     }
     
     /**
@@ -52,23 +59,15 @@ protected:
     /**
      * @brief Регистрирует фабрику команды в IoC
      */
-    void registerCommand(const std::string& commandName) {
-        // Фабрика с параметрами: (object, params)
-        auto factory = std::make_shared<std::function<std::shared_ptr<void>(std::vector<std::shared_ptr<void>>)>>(
-            [commandName](std::vector<std::shared_ptr<void>> args) -> std::shared_ptr<void> {
-                auto object = std::static_pointer_cast<IUObject>(args[0]);
-                auto params = std::static_pointer_cast<IUObject>(args[1]);
-                
-                std::shared_ptr<ICommand> cmd;
-                if (commandName == "StartMove") {
-                    cmd = std::make_shared<StartMoveCommand>(object, params);
-                } else if (commandName == "StopMove") {
-                    cmd = std::make_shared<StopMoveCommand>(object, params);
-                } else if (commandName == "Fire") {
-                    cmd = std::make_shared<FireCommand>(object, params);
-                }
-                
-                return std::static_pointer_cast<void>(cmd);
+    template<typename FactoryType>
+    void registerCommandFactory(const std::string& commandName) {
+        auto factory = std::make_shared<std::function<std::shared_ptr<void>()>>(
+            []() -> std::shared_ptr<void> {
+                return std::static_pointer_cast<void>(
+                    std::static_pointer_cast<ICommandFactory>(
+                        std::make_shared<FactoryType>()
+                    )
+                );
             }
         );
         
@@ -101,12 +100,14 @@ protected:
     }
 };
 
+bool OrderInterpreterTest::commandsRegistered_ = false;
+
 /**
  * @brief Тест успешного выполнения StartMove
  */
 TEST_F(OrderInterpreterTest, InterpretStartMove_Success)
 {
-    Order order = createOrder("ship_001", "StartMove", {{"initialVelocity", 5}});
+    Order order = createOrder("basic_ship", "StartMove", {{"initialVelocity", 5}});
     
     OrderInterpreter interpreter;
     
@@ -118,7 +119,7 @@ TEST_F(OrderInterpreterTest, InterpretStartMove_Success)
  */
 TEST_F(OrderInterpreterTest, InterpretStopMove_Success)
 {
-    Order order = createOrder("ship_001", "StopMove");
+    Order order = createOrder("basic_ship", "StopMove");
     
     OrderInterpreter interpreter;
     
@@ -130,7 +131,7 @@ TEST_F(OrderInterpreterTest, InterpretStopMove_Success)
  */
 TEST_F(OrderInterpreterTest, InterpretFire_Success)
 {
-    Order order = createOrder("ship_001", "Fire", {{"targetId", std::string("enemy_001")}});
+    Order order = createOrder("basic_ship", "Fire", {{"targetId", std::string("enemy_001")}});
     
     OrderInterpreter interpreter;
     
@@ -142,7 +143,7 @@ TEST_F(OrderInterpreterTest, InterpretFire_Success)
  */
 TEST_F(OrderInterpreterTest, InterpretFireWithoutTarget_Success)
 {
-    Order order = createOrder("ship_001", "Fire");
+    Order order = createOrder("basic_ship", "Fire");
     
     OrderInterpreter interpreter;
     
@@ -170,7 +171,7 @@ TEST_F(OrderInterpreterTest, InterpretInvalidOrder_EmptyId_ThrowsException)
 TEST_F(OrderInterpreterTest, InterpretInvalidOrder_EmptyAction_ThrowsException)
 {
     Order order;
-    order.objectId = "ship_001";
+    order.objectId = "basic_ship";
     order.action = "";
     order.parameters = std::make_shared<UObject>();
     
@@ -196,7 +197,7 @@ TEST_F(OrderInterpreterTest, InterpretUnknownObject_ThrowsException)
  */
 TEST_F(OrderInterpreterTest, InterpretUnknownAction_ThrowsException)
 {
-    Order order = createOrder("ship_001", "UnknownAction");
+    Order order = createOrder("basic_ship", "UnknownAction");
     
     OrderInterpreter interpreter;
     
@@ -208,7 +209,7 @@ TEST_F(OrderInterpreterTest, InterpretUnknownAction_ThrowsException)
  */
 TEST_F(OrderInterpreterTest, InterpretStartMoveWithoutVelocity_ThrowsException)
 {
-    Order order = createOrder("ship_001", "StartMove");  // Без initialVelocity
+    Order order = createOrder("basic_ship", "StartMove");  // Без initialVelocity
     
     OrderInterpreter interpreter;
     
@@ -220,23 +221,37 @@ TEST_F(OrderInterpreterTest, InterpretStartMoveWithoutVelocity_ThrowsException)
  */
 TEST_F(OrderInterpreterTest, ExtensibilityTest_AddNewCommand)
 {
-    // Регистрируем новую команду "Rotate" динамически
-    auto factory = std::make_shared<std::function<std::shared_ptr<void>(std::vector<std::shared_ptr<void>>)>>(
-        [](std::vector<std::shared_ptr<void>> args) -> std::shared_ptr<void> {
-            auto object = std::static_pointer_cast<IUObject>(args[0]);
-            auto params = std::static_pointer_cast<IUObject>(args[1]);
-            
+    // Создаем фабрику для новой команды "Rotate" динамически
+    class RotateCommandFactory : public ICommandFactory {
+    public:
+        std::shared_ptr<ICommand> create(
+            std::shared_ptr<IUObject> object,
+            std::shared_ptr<IUObject> params) override
+        {
             // Простая команда поворота
-            int angle = std::any_cast<int>(params->getProperty("angle"));
-            object->setProperty("rotation", angle);
-            
-            // Возвращаем команду-заглушку
             class RotateCommand : public ICommand {
             public:
-                void execute() override {}
+                RotateCommand(std::shared_ptr<IUObject> obj, std::shared_ptr<IUObject> p)
+                    : object_(obj), params_(p) {}
+                void execute() override {
+                    int angle = std::any_cast<int>(params_->getProperty("angle"));
+                    object_->setProperty("rotation", angle);
+                }
+            private:
+                std::shared_ptr<IUObject> object_;
+                std::shared_ptr<IUObject> params_;
             };
+            return std::make_shared<RotateCommand>(object, params);
+        }
+    };
+    
+    // Регистрируем фабрику новой команды
+    auto factory = std::make_shared<std::function<std::shared_ptr<void>()>>(
+        []() -> std::shared_ptr<void> {
             return std::static_pointer_cast<void>(
-                std::static_pointer_cast<ICommand>(std::make_shared<RotateCommand>())
+                std::static_pointer_cast<ICommandFactory>(
+                    std::make_shared<RotateCommandFactory>()
+                )
             );
         }
     );
@@ -247,7 +262,7 @@ TEST_F(OrderInterpreterTest, ExtensibilityTest_AddNewCommand)
     registerCmd->execute();
     
     // Теперь интерпретатор может обрабатывать Rotate без изменения кода
-    Order order = createOrder("ship_001", "Rotate", {{"angle", 45}});
+    Order order = createOrder("basic_ship", "Rotate", {{"angle", 45}});
     
     OrderInterpreter interpreter;
     

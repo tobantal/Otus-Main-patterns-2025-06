@@ -1,4 +1,5 @@
 #include "OrderInterpreter.hpp"
+#include "ICommandFactory.hpp"
 #include "IoC.hpp"
 #include <stdexcept>
 
@@ -18,7 +19,7 @@ void OrderInterpreter::interpret(const Order& order)
     // Шаг 2: Разрешение объекта через IoC
     auto object = resolveObject(order.objectId);
     
-    // Шаг 3: Создание команды через IoC
+    // Шаг 3: Создание команды через IoC (используя фабрику)
     auto command = createCommand(order.action, object, order.parameters);
     
     // Шаг 4: Выполнение команды
@@ -45,14 +46,11 @@ std::shared_ptr<ICommand> OrderInterpreter::createCommand(
         // Формируем ключ для IoC: "Commands.{action}"
         std::string key = "Commands." + action;
         
-        // Формируем аргументы для фабрики команд
-        // Фабрика ожидает: (object, params)
-        std::vector<std::shared_ptr<void>> args = {
-            std::static_pointer_cast<void>(object),
-            std::static_pointer_cast<void>(params)
-        };
+        // Получаем фабрику команды из IoC
+        auto factory = IoC::resolve<ICommandFactory>(key);
         
-        return IoC::resolve<ICommand>(key, args);
+        // Создаем команду через фабрику
+        return factory->create(object, params);
     } catch (const std::exception& e) {
         throw std::runtime_error("Unknown action: " + action);
     }
