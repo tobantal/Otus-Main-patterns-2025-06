@@ -25,16 +25,22 @@ jobs:
       
     - name: ✅ Run tests
       run: ctest --test-dir build --output-on-failure --verbose
-    
+      
     - name: 📊 Generate HTML coverage report
       run: |
-        gcovr --root . \
-              --filter 'hw-14-final-project/.*' \
-              --exclude '.*/tests/.*' \
-              --gcov-ignore-parse-errors=negative_hits.warn_once_per_file \
-              --html-details coverage.html \
-              --print-summary
-    
+        gcovr \
+          --root . \
+          --exclude '.*CMakeFiles/.*' \
+          --exclude '.*CompilerIdCXX.*' \
+          --exclude '.*CompilerIdC.*' \
+          --exclude '.*cmake/.*' \
+          --exclude '.*/tests/.*' \
+          --exclude '.*_deps/.*' \
+          --exclude '.*/demo/.*' \
+          --gcov-ignore-parse-errors=all \
+          --html-details coverage.html \
+          --print-summary
+              
     - name: 📤 Upload coverage report
       uses: actions/upload-artifact@v4
       if: always()

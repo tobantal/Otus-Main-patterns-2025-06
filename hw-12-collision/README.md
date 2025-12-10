@@ -25,14 +25,14 @@
 ### Диаграмма классов
 
 ```
-┌─────────────────────┐     ┌─────────────────────┐
-│   IRegionResolver   │     │    IRegionManager   │
-├─────────────────────┤     ├─────────────────────┤
-│ +getRegion()        │     │ +addObject()        │
-│ +getCellSize()      │     │ +removeObject()     │
-└─────────┬───────────┘     │ +moveObject()       │
+┌─────────────────────┐     ┌──────────────────────┐
+│   IRegionResolver   │     │    IRegionManager    │
+├─────────────────────┤     ├──────────────────────┤
+│ +getRegion()        │     │ +addObject()         │
+│ +getCellSize()      │     │ +removeObject()      │
+└─────────┬───────────┘     │ +moveObject()        │
           │                 │ +getObjectsInRegion()│
-          ▼                 └──────────┬──────────┘
+          ▼                 └───────────┬──────────┘
 ┌─────────────────────┐                │
 │ GridRegionResolver  │                ▼
 ├─────────────────────┤     ┌─────────────────────┐
@@ -43,29 +43,29 @@
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────┐
-│            UpdateRegionCommand                   │
+│            UpdateRegionCommand                  │
 ├─────────────────────────────────────────────────┤
 │ -object_: shared_ptr<IGameObject>               │
 │ -regionManager_: shared_ptr<IRegionManager>     │
-│ -collisionChecker_: shared_ptr<ICollisionChecker>│
+│ -collisionChecker_:shared_ptr<ICollisionChecker>│
 │ -collisionMacro_: shared_ptr<MacroCommand>&     │
 ├─────────────────────────────────────────────────┤
-│ +execute()                                       │
+│ +execute()                                      │
 │ -getStoredRegion()                              │
 │ -storeRegion()                                  │
 └─────────────────────────────────────────────────┘
                       │
                       ▼
-┌─────────────────────────────────────────────────┐
-│         MultiRegionCollisionSystem              │
-├─────────────────────────────────────────────────┤
-│ -managers_: vector<shared_ptr<RegionManager>>   │
+┌────────────────────────────────────────────────────┐
+│         MultiRegionCollisionSystem                 │
+├────────────────────────────────────────────────────┤
+│ -managers_: vector<shared_ptr<RegionManager>>      │
 │ -collisionMacros_: vector<shared_ptr<MacroCommand>>│
-│ -cellSize_, numSystems_                         │
-├─────────────────────────────────────────────────┤
-│ +addObject(), removeObject(), updateObject()    │
-│ +getCollisionCommands()                         │
-└─────────────────────────────────────────────────┘
+│ -cellSize_, numSystems_                            │
+├────────────────────────────────────────────────────┤
+│ +addObject(), removeObject(), updateObject()       │
+│ +getCollisionCommands()                            │
+└────────────────────────────────────────────────────┘
 ```
 
 ### Решение проблемы границ
