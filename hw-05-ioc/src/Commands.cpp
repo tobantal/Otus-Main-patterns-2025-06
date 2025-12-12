@@ -6,10 +6,17 @@ RegisterCommand::RegisterCommand(const std::string& key, IocContainer::FactoryFu
 }
 
 void RegisterCommand::execute() {
-    //IocContainer::getInstance().registerGlobalDependency(key_, factory_);
-
     std::cout << ">>> RegisterCommand::execute() for key: '" << key_ << "'" << std::endl;
-    IocContainer::getInstance().registerGlobalDependency(key_, factory_);
+    
+    auto currentScope = IocContainer::getInstance().getCurrentScope();
+    if (currentScope) {
+        // Регистрируем в текущем скоупе
+        currentScope->registerDependency(key_, factory_);
+    } else {
+        // Регистрируем глобально
+        IocContainer::getInstance().registerGlobalDependency(key_, factory_);
+    }
+    
     std::cout << ">>> RegisterCommand::execute() completed" << std::endl;
 }
 
