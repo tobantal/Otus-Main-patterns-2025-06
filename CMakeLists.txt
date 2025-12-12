@@ -35,10 +35,10 @@ add_subdirectory(common)
 #add_subdirectory ("hw-02-abstractions")
 #add_subdirectory("hw-03-solid-and-exceptions")
 
-add_subdirectory ("hw-04-macro-commands")
+#add_subdirectory ("hw-04-macro-commands")
 
 # Подключаем hw-05-ioc: собираем её как библиотеку
-#add_subdirectory(hw-05-ioc)
+add_subdirectory(hw-05-ioc)
 
 # Подключаем hw-06-adapter
 # зависит от hw-05-ioc (раскомментировать при необходимости)
@@ -56,7 +56,9 @@ add_subdirectory ("hw-04-macro-commands")
 # Сборка проекта со сменой состояний
 #add_subdirectory(hw-11-state)
 
-add_subdirectory(hw-12-collision)
+#add_subdirectory(hw-12-collision)
+
+add_subdirectory(hw-13-interpreter)
 
 # Сборка финального проекта
 #add_subdirectory(hw-14-final-project)
